@@ -1,0 +1,1195 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IUI — Live Notes</title>
+  <style>
+    :root{
+      --brand-1:#7c5cff;
+      --brand-2:#4dd6ff;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --bad:#fb7185;
+
+      --bg:#070a14;
+      --bg2:#0b1022;
+      --panel:rgba(255,255,255,.05);
+      --panel2:rgba(255,255,255,.035);
+      --stroke:rgba(255,255,255,.10);
+      --stroke2:rgba(255,255,255,.07);
+
+      --text:#eef2ff;
+      --muted:#a9b7df;
+      --muted2:#7f8bb4;
+
+      --r-xl:22px;
+      --r-lg:18px;
+      --r-md:14px;
+
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --shadow2: 0 10px 30px rgba(0,0,0,.35);
+
+      --max: 1240px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1100px 600px at 15% 0%, rgba(124,92,255,.30), transparent 60%),
+        radial-gradient(900px 520px at 90% 5%, rgba(77,214,255,.20), transparent 60%),
+        radial-gradient(900px 700px at 40% 120%, rgba(34,197,94,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      overflow-x:hidden;
+    }
+
+    body:before{
+      content:"";
+      position:fixed; inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+      opacity:.22;
+      pointer-events:none;
+    }
+
+    .wrap{max-width:var(--max);margin:0 auto;padding:22px}
+    a{color:inherit}
+
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      padding:14px 16px;
+      border:1px solid var(--stroke2);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border-radius: calc(var(--r-xl) + 6px);
+      box-shadow: var(--shadow2);
+      position: sticky; top: 14px; z-index: 20;
+      backdrop-filter: blur(12px);
+    }
+    .brand{display:flex;align-items:center;gap:12px;min-width:240px}
+    .logo{
+      width:40px;height:40px;border-radius:14px;
+      background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+      box-shadow: 0 16px 28px rgba(124,92,255,.25);
+      position:relative;
+    }
+    .logo:after{
+      content:"";
+      position:absolute; inset:8px;
+      border-radius:10px;
+      background: rgba(255,255,255,.18);
+      opacity:.35;
+    }
+    .brand h1{margin:0;font-size:15px;line-height:1.1;letter-spacing:.2px}
+    .brand p{margin:2px 0 0 0;font-size:12px;color:var(--muted)}
+
+    .actions{
+      display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end
+    }
+
+    .pill{
+      padding:7px 10px;border-radius:999px;border:1px solid var(--stroke2);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-size:12px;
+      display:inline-flex;align-items:center;gap:8px;
+      white-space:nowrap;
+    }
+    .pill b{color:var(--text)}
+    .pill.ok{border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.12); color:#caffdf}
+    .pill.warn{border-color: rgba(245,158,11,.40); background: rgba(245,158,11,.12); color:#ffe7c2}
+    .pill.bad{border-color: rgba(251,113,133,.40); background: rgba(251,113,133,.12); color:#ffd1da}
+
+    select{
+      border:1px solid var(--stroke2);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      border-radius: 999px;
+      padding:10px 12px;
+      outline:none;
+      min-height:40px;
+    }
+
+    .btn{
+      border:1px solid var(--stroke2);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-radius: 999px;
+      padding:10px 14px;
+      min-height:40px;
+      font-weight: 800;
+      cursor:pointer;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+      display:inline-flex;align-items:center;gap:8px;
+      user-select:none;
+    }
+    .btn:hover{background: rgba(255,255,255,.10)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(77,214,255,.70));
+      border-color: rgba(255,255,255,.18);
+      box-shadow: 0 18px 34px rgba(124,92,255,.18);
+    }
+    .btn.danger{
+      background: rgba(251,113,133,.14);
+      border-color: rgba(251,113,133,.35);
+    }
+    .btn.ghost{background: transparent}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+
+    .grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:14px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr}
+      .brand{min-width:auto}
+    }
+
+    .card{
+      border: 1px solid var(--stroke2);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.10));
+      border-radius: var(--r-xl);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      border-bottom:1px solid var(--stroke2);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), transparent);
+    }
+    .cardHead h2{
+      margin:0;font-size:13px;letter-spacing:.3px;text-transform:uppercase;color:#cbd5ff
+    }
+    .sub{margin:0;color:var(--muted);font-size:12px;line-height:1.35}
+    .cardBody{padding:14px 16px}
+
+    textarea, pre{
+      width:100%;
+      border:1px solid var(--stroke2);
+      border-radius: var(--r-lg);
+      padding: 12px;
+      background: rgba(0,0,0,.26);
+      color: var(--text);
+      outline:none;
+      line-height:1.55;
+      font-size:13px;
+    }
+    textarea{min-height: 240px; resize: vertical;}
+    pre{white-space: pre-wrap; margin:0}
+
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{
+      padding:8px 12px;border-radius:999px;border:1px solid var(--stroke2);
+      background: rgba(0,0,0,.16);
+      color: var(--muted);
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+      transition: background .2s ease, border-color .2s ease, color .2s ease;
+    }
+    .tab.active{
+      color: var(--text);
+      background: rgba(124,92,255,.14);
+      border-color: rgba(124,92,255,.40);
+      box-shadow: 0 0 0 4px rgba(124,92,255,.10);
+    }
+
+    .hint{color:var(--muted2);font-size:12px;margin-top:10px;line-height:1.45}
+
+    .toast{
+      position: fixed;
+      right: 18px; bottom: 18px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke2);
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow2);
+      color: var(--text);
+      display:none;
+      max-width: 440px;
+      z-index: 40;
+    }
+
+    textarea::-webkit-scrollbar{width:10px}
+    textarea::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.12);
+      border-radius: 999px;
+      border: 2px solid rgba(0,0,0,.0);
+      background-clip: padding-box;
+    }
+
+    /* ========== Компактный AI Analysis ========== */
+    .ai-analysis-compact {
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--stroke2);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .ai-header {
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--stroke2);
+    }
+
+    .ai-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ai-title h3 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .ai-status {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      background: rgba(124,92,255,.15);
+      color: var(--brand-1);
+      font-weight: 600;
+    }
+
+    .ai-status.analyzed {
+      background: rgba(34,197,94,.15);
+      color: var(--ok);
+    }
+
+    .btn-expand {
+      padding: 8px 16px;
+      font-size: 13px;
+      border-radius: 8px;
+      border: 1px solid var(--stroke2);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-expand:hover {
+      background: rgba(255,255,255,.10);
+    }
+
+    .ai-summary {
+      padding: 20px;
+    }
+
+    .summary-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .summary-metrics {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--stroke2);
+    }
+
+    .metric {
+      text-align: center;
+      flex: 1;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--brand-1);
+      margin-bottom: 4px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .ai-details {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s ease;
+    }
+
+    .ai-details.expanded {
+      max-height: 800px;
+    }
+
+    .details-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--stroke2);
+      overflow-x: auto;
+    }
+
+    .detail-tab {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      border-bottom: 2px solid transparent;
+    }
+
+    .detail-tab:hover {
+      color: var(--text);
+    }
+
+    .detail-tab.active {
+      color: var(--brand-1);
+      border-bottom-color: var(--brand-1);
+      font-weight: 600;
+    }
+
+    .details-content {
+      padding: 20px;
+    }
+
+    .detail-content {
+      display: none;
+    }
+
+    .detail-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .detail-content pre {
+      margin: 0;
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    #homeworkList,
+    #complexTopicsList,
+    #recommendationsList {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .task-item,
+    .topic-item,
+    .recommendation-item {
+      padding: 12px;
+      background: rgba(255,255,255,.03);
+      border-radius: 8px;
+      border-left: 3px solid var(--brand-1);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .topic-item {
+      border-left-color: var(--warn);
+    }
+
+    .recommendation-item {
+      border-left-color: var(--ok);
+    }
+
+    /* TGAM Data Styles */
+    .tgam-data {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .tgam-metric {
+      flex: 1;
+      min-width: 120px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--stroke2);
+      border-radius: var(--r-md);
+      padding: 12px;
+      text-align: center;
+    }
+    
+    .tgam-value {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 4px 0;
+      color: var(--text);
+    }
+    
+    .tgam-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+    
+    .tgam-trend {
+      font-size: 10px;
+      margin-top: 4px;
+    }
+    
+    .tgam-trend.up { color: var(--ok); }
+    .tgam-trend.down { color: var(--bad); }
+    .tgam-trend.stable { color: var(--muted); }
+    
+    /* Progress Bars */
+    .progress-bar {
+      height: 6px;
+      background: rgba(255,255,255,.1);
+      border-radius: 3px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+      transition: width 1s ease;
+    }
+    
+    /* Attention Drops */
+    .attention-drop {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      background: rgba(251,113,133,.05);
+      border-radius: var(--r-md);
+      margin-bottom: 8px;
+      border-left: 3px solid var(--bad);
+    }
+    
+    .drop-time {
+      font-weight: bold;
+      color: var(--bad);
+      min-width: 60px;
+    }
+    
+    .drop-reason {
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>IUI — Interactive Learning Assistant</h1>
+          <p>Live transcription • AI analysis • Student monitoring</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="pill"><span>⏱️</span><b id="time">00:00</b></div>
+        <div class="pill" id="stateChip"><span>●</span><b id="state">Ready</b></div>
+
+        <select id="lang" title="Language">
+          <option value="ru-RU">🇷🇺 Русский</option>
+          <option value="kk-KZ">🇰🇿 Қазақша</option>
+          <option value="en-US">🇬🇧 English</option>
+        </select>
+
+        <button class="btn primary" id="start">▶ Start Lesson</button>
+        <button class="btn" id="stop" disabled>⏹ Stop</button>
+
+        <button class="btn" id="aiAnalyze">✨ AI Analyze</button>
+
+        <button class="btn" id="saveLesson">💾 Save</button>
+        <button class="btn ghost" id="openArchive">📚 Archive</button>
+        <button class="btn ghost" id="openTeacher">📊 Dashboard</button>
+        <button class="btn ghost" id="clear">🧹 Reset</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="cardHead">
+          <div>
+            <h2>Live Lesson Transcription</h2>
+            <p class="sub">Real-time speech recognition. Speak clearly in short phrases for best results.</p>
+          </div>
+          <div class="tabs" id="tabs">
+            <div class="tab active" data-tab="transcript">Transcript</div>
+            <div class="tab" data-tab="tgam">Student Focus</div>
+          </div>
+        </div>
+
+        <div class="cardBody" id="tab_transcript">
+          <textarea id="raw" placeholder="Click 'Start Lesson' and begin teaching..."></textarea>
+          <div class="hint">The AI will automatically detect complex topics and create personalized homework.</div>
+        </div>
+
+        <div class="cardBody" id="tab_tgam" style="display:none;">
+          <div class="tgam-data" id="tgamData">
+            <!-- Данные TGAM будут сгенерированы здесь -->
+          </div>
+          
+          <div id="attentionDrops" style="margin-top: 20px;">
+            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text);">⚠️ Attention Drops Detected</h3>
+            <!-- Провалы внимания будут показаны здесь -->
+          </div>
+          
+          <div class="hint">Simulated student focus data. Updates every 3 seconds during active recording.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardHead">
+          <div>
+            <h2>AI Analysis & Homework</h2>
+            <p class="sub">Automatic lesson analysis with personalized assignments</p>
+          </div>
+          <span class="pill ok" id="savedPill" style="display:none;">✅ Saved</span>
+        </div>
+
+        <div class="cardBody">
+          <!-- Компактный AI Analysis -->
+          <div class="ai-analysis-compact" id="aiAnalysisCompact">
+            <div class="ai-header">
+              <div class="ai-title">
+                <h3>AI Analysis</h3>
+                <span class="ai-status" id="aiStatus">Ready</span>
+              </div>
+              <button class="btn-expand" onclick="toggleAIDetails()" id="expandAIBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                </svg>
+                Expand View
+              </button>
+            </div>
+            
+            <div class="ai-summary" id="aiSummary">
+              <p class="summary-text">AI analysis will appear here after you click "AI Analyze"</p>
+              <div class="summary-metrics" style="display: none;" id="summaryMetrics">
+                <div class="metric">
+                  <div class="metric-value" id="comprehensionScore">--%</div>
+                  <div class="metric-label">Understanding</div>
+                </div>
+                <div class="metric">
+                  <div class="metric-value" id="difficultyScore">--%</div>
+                  <div class="metric-label">Difficulty</div>
+                </div>
+                <div class="metric">
+                  <div class="metric-value" id="engagementScore">--%</div>
+                  <div class="metric-label">Engagement</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="ai-details" id="aiDetails">
+              <div class="details-tabs">
+                <div class="detail-tab active" data-tab="summary">📝 Summary</div>
+                <div class="detail-tab" data-tab="homework">📚 Homework</div>
+                <div class="detail-tab" data-tab="complexities">⚠️ Complex Topics</div>
+                <div class="detail-tab" data-tab="recommendations">🎯 Recommendations</div>
+              </div>
+              
+              <div class="details-content">
+                <div id="detail-summary" class="detail-content active">
+                  <pre id="fullSummary">Complete summary will appear here...</pre>
+                </div>
+                <div id="detail-homework" class="detail-content">
+                  <div id="homeworkList"></div>
+                </div>
+                <div id="detail-complexities" class="detail-content">
+                  <div id="complexTopicsList"></div>
+                </div>
+                <div id="detail-recommendations" class="detail-content">
+                  <div id="recommendationsList"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  // Элементы интерфейса
+  const langEl = $("lang");
+  const stateEl = $("state");
+  const stateChip = $("stateChip");
+  const timeEl = $("time");
+  const startBtn = $("start");
+  const stopBtn = $("stop");
+  const clearBtn = $("clear");
+  const aiBtn = $("aiAnalyze");
+  const saveBtn = $("saveLesson");
+  const archiveBtn = $("openArchive");
+  const teacherBtn = $("openTeacher");
+  const toastEl = $("toast");
+
+  // Элементы контента
+  const rawEl = $("raw");
+  const savedPill = $("savedPill");
+
+  // Элементы вкладок
+  const tabs = $("tabs");
+  const tabTranscript = $("tab_transcript");
+  const tabTgam = $("tab_tgam");
+  const tgamData = $("tgamData");
+  const attentionDropsEl = $("attentionDrops");
+
+  // Вспомогательные функции
+  function toast(msg, type = "info"){
+    const toastEl = $("toast");
+    toastEl.textContent = msg;
+    
+    if (type === "success") {
+      toastEl.style.borderLeft = "4px solid var(--ok)";
+    } else if (type === "error") {
+      toastEl.style.borderLeft = "4px solid var(--bad)";
+    } else if (type === "warning") {
+      toastEl.style.borderLeft = "4px solid var(--warn)";
+    } else {
+      toastEl.style.borderLeft = "4px solid var(--brand-1)";
+    }
+    
+    toastEl.style.display = "block";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toastEl.style.display = "none", 2200);
+  }
+
+  // Переменные состояния
+  let recognition = null;
+  let t0 = null;
+  let timer = null;
+  let tgamTimer = null;
+  let finalText = "";
+  let timeline = [];
+  let attentionDrops = [];
+
+  // Данные TGAM
+  let tgamMetrics = {
+    attention: 75,
+    meditation: 65,
+    blink: 120,
+    delta: 45,
+    theta: 35,
+    alpha: 55,
+    beta: 40,
+    gamma: 25,
+    lastDrop: null
+  };
+
+  // ========== ФУНКЦИИ ДЛЯ TGAM МОДУЛЯ ==========
+  function updateTgamMetrics() {
+    const change = (Math.random() - 0.5) * 10;
+    tgamMetrics.attention = Math.max(20, Math.min(95, tgamMetrics.attention + change));
+    
+    const medChange = (Math.random() - 0.5) * 8;
+    tgamMetrics.meditation = Math.max(25, Math.min(90, tgamMetrics.meditation + medChange));
+    
+    if (Math.random() > 0.85) {
+      const dropTime = `${Math.floor(Math.random() * 45)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`;
+      tgamMetrics.lastDrop = dropTime;
+      
+      attentionDrops.push({
+        time: dropTime,
+        duration: Math.floor(30 + Math.random() * 120),
+        severity: Math.floor(20 + Math.random() * 30),
+        reason: getRandomDropReason()
+      });
+      
+      if (attentionDrops.length > 5) {
+        attentionDrops = attentionDrops.slice(-5);
+      }
+    }
+    
+    tgamMetrics.blink = Math.max(80, Math.min(200, tgamMetrics.blink + (Math.random() - 0.5) * 20));
+    tgamMetrics.alpha = Math.max(30, Math.min(80, tgamMetrics.alpha + (Math.random() - 0.5) * 5));
+    
+    renderTgamData();
+    renderAttentionDrops();
+  }
+
+  function getRandomDropReason() {
+    const reasons = [
+      "Сложная тема",
+      "Отвлекался на телефон",
+      "Усталость",
+      "Непонятное объяснение",
+      "Шум в классе",
+      "Быстрый темп урока"
+    ];
+    return reasons[Math.floor(Math.random() * reasons.length)];
+  }
+
+  function renderTgamData() {
+    if (!tgamData) return;
+    
+    const status = tgamMetrics.attention > 80 ? "high" : tgamMetrics.attention > 60 ? "normal" : "low";
+    const statusColor = tgamMetrics.attention > 80 ? "up" : tgamMetrics.attention > 60 ? "stable" : "down";
+    
+    tgamData.innerHTML = `
+      <div class="tgam-metric">
+        <div class="tgam-label">Attention Level</div>
+        <div class="tgam-value">${Math.round(tgamMetrics.attention)}%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${tgamMetrics.attention}%"></div>
+        </div>
+        <div class="tgam-trend ${statusColor}">
+          ${status === "high" ? "✓ Focused" : status === "normal" ? "~ Average" : "⚠️ Low"}
+        </div>
+      </div>
+      
+      <div class="tgam-metric">
+        <div class="tgam-label">Meditation</div>
+        <div class="tgam-value">${Math.round(tgamMetrics.meditation)}%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${tgamMetrics.meditation}%"></div>
+        </div>
+        <div class="tgam-trend ${tgamMetrics.meditation > 70 ? 'up' : tgamMetrics.meditation < 40 ? 'down' : 'stable'}">
+          ${tgamMetrics.meditation > 70 ? "✓ Relaxed" : tgamMetrics.meditation < 40 ? "⚠️ Stressed" : "~ Balanced"}
+        </div>
+      </div>
+      
+      <div class="tgam-metric">
+        <div class="tgam-label">Alpha Waves</div>
+        <div class="tgam-value">${Math.round(tgamMetrics.alpha)}</div>
+        <div class="tgam-trend ${tgamMetrics.alpha > 60 ? 'up' : tgamMetrics.alpha < 30 ? 'down' : 'stable'}">
+          ${tgamMetrics.alpha > 60 ? "✓ Alert" : tgamMetrics.alpha < 30 ? "⚠️ Drowsy" : "~ Normal"}
+        </div>
+      </div>
+      
+      <div class="tgam-metric">
+        <div class="tgam-label">Last Drop</div>
+        <div class="tgam-value">${tgamMetrics.lastDrop || "None"}</div>
+        <div class="tgam-trend ${tgamMetrics.lastDrop ? 'down' : 'stable'}">
+          ${tgamMetrics.lastDrop ? "⚠️ Detected" : "✓ Stable"}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderAttentionDrops() {
+    if (!attentionDropsEl) return;
+    
+    if (attentionDrops.length === 0) {
+      attentionDropsEl.innerHTML = `
+        <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text);">⚠️ Attention Drops Detected</h3>
+        <div class="hint">No significant attention drops detected recently.</div>
+      `;
+      return;
+    }
+    
+    let html = `<h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text);">⚠️ Recent Attention Drops</h3>`;
+    
+    attentionDrops.slice().reverse().forEach((drop, index) => {
+      html += `
+        <div class="attention-drop">
+          <div class="drop-time">${drop.time}</div>
+          <div>
+            <div style="font-size: 13px; color: var(--text);">Severity: ${drop.severity}% attention</div>
+            <div class="drop-reason">${drop.reason} • ${drop.duration}s duration</div>
+          </div>
+        </div>
+      `;
+    });
+    
+    attentionDropsEl.innerHTML = html;
+  }
+
+  function startTgamSimulation() {
+    if (tgamTimer) clearInterval(tgamTimer);
+    tgamTimer = setInterval(updateTgamMetrics, 3000);
+    updateTgamMetrics();
+  }
+
+  function stopTgamSimulation() {
+    if (tgamTimer) {
+      clearInterval(tgamTimer);
+      tgamTimer = null;
+    }
+  }
+
+  // ========== ФУНКЦИИ ДЛЯ AI АНАЛИЗА ==========
+  function updateAIAnalysis(data) {
+    if (!data) return;
+    
+    // Update summary
+    const summaryText = data.summary ? 
+      (data.summary.substring(0, 150) + (data.summary.length > 150 ? '...' : '')) : 
+      'No summary available';
+    
+    document.querySelector('.summary-text').textContent = summaryText;
+    
+    // Show metrics
+    document.getElementById('summaryMetrics').style.display = 'flex';
+    document.getElementById('comprehensionScore').textContent = '85%';
+    document.getElementById('difficultyScore').textContent = '65%';
+    document.getElementById('engagementScore').textContent = '78%';
+    
+    // Update status
+    const aiStatus = document.getElementById('aiStatus');
+    aiStatus.textContent = 'Analyzed';
+    aiStatus.className = 'ai-status analyzed';
+    
+    // Update details
+    document.getElementById('fullSummary').textContent = data.summary || 'No summary available';
+    
+    // Update homework
+    const homeworkList = document.getElementById('homeworkList');
+    if (data.homework && data.homework.length > 0) {
+      homeworkList.innerHTML = data.homework.map((task, i) => `
+        <div class="task-item">
+          <strong>Task ${i + 1}:</strong> ${escapeHtml(task)}
+        </div>
+      `).join('');
+    }
+    
+    // Update complex topics
+    const topicsList = document.getElementById('complexTopicsList');
+    const complexTopics = data.key_points || [];
+    if (complexTopics.length > 0) {
+      topicsList.innerHTML = complexTopics.map(topic => `
+        <div class="topic-item">
+          ${escapeHtml(topic)}
+        </div>
+      `).join('');
+    }
+    
+    // Update recommendations
+    const recommendationsList = document.getElementById('recommendationsList');
+    const recommendations = data.recommendations || [];
+    if (recommendations.length > 0) {
+      recommendationsList.innerHTML = recommendations.map(rec => `
+        <div class="recommendation-item">
+          ${escapeHtml(rec)}
+        </div>
+      `).join('');
+    }
+  }
+
+  function toggleAIDetails() {
+    const details = document.getElementById('aiDetails');
+    const btn = document.getElementById('expandAIBtn');
+    const compact = document.getElementById('aiAnalysisCompact');
+    
+    if (details.classList.contains('expanded')) {
+      details.classList.remove('expanded');
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+        Expand View
+      `;
+      compact.style.height = 'auto';
+    } else {
+      details.classList.add('expanded');
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z"/>
+          <polyline points="15 3 15 8 20 8"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        Collapse View
+      `;
+      compact.style.height = '80vh';
+    }
+  }
+
+  function setupTabSwitching() {
+    document.querySelectorAll('.detail-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        
+        // Update active tab
+        document.querySelectorAll('.detail-tab').forEach(t => {
+          t.classList.remove('active');
+        });
+        tab.classList.add('active');
+        
+        // Show selected content
+        document.querySelectorAll('.detail-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(`detail-${tabName}`).classList.add('active');
+      });
+    });
+  }
+
+  // ========== ОСНОВНЫЕ ФУНКЦИИ ==========
+  function setState(label, kind="neutral"){
+    stateEl.textContent = label;
+    stateChip.className = "pill";
+    if(kind==="ok") stateChip.classList.add("ok");
+    else if(kind==="bad") stateChip.classList.add("bad");
+    else if(kind==="warn") stateChip.classList.add("warn");
+  }
+
+  function escapeHtml(s){
+    return (s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+  }
+
+  function nowSec(){ return t0 ? Math.floor((Date.now() - t0)/1000) : 0; }
+  
+  function fmt(sec){
+    const m = String(Math.floor(sec/60)).padStart(2,"0");
+    const s = String(sec%60).padStart(2,"0");
+    return `${m}:${s}`;
+  }
+
+  function startClock(){
+    if(timer) clearInterval(timer);
+    timer = setInterval(()=> timeEl.textContent = fmt(nowSec()), 200);
+  }
+
+  function startRecognition(){
+    if(!SpeechRecognition){
+      toast("Open in Chrome/Edge: SpeechRecognition is required.", "error");
+      setState("No Speech API", "bad");
+      return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = langEl.value;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => {
+      if(!t0) t0 = Date.now();
+      startClock();
+      setState("Recording", "ok");
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      savedPill.style.display = "none";
+      
+      startTgamSimulation();
+    };
+
+    recognition.onerror = (e) => {
+      setState("Error: " + (e.error || "unknown"), "bad");
+    };
+
+    recognition.onend = () => {
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      setState("Stopped", "neutral");
+      stopTgamSimulation();
+    };
+
+    recognition.onresult = (event) => {
+      let interim = "";
+      for(let i=event.resultIndex; i<event.results.length; i++){
+        const txt = event.results[i][0].transcript;
+        if(event.results[i].isFinal){
+          finalText += txt + " ";
+        }else{
+          interim += txt;
+        }
+      }
+      rawEl.value = finalText + interim;
+    };
+
+    recognition.start();
+  }
+
+  function stopRecognition(){
+    try { recognition?.stop(); } catch(_) {}
+    stopTgamSimulation();
+  }
+
+  async function aiAnalyze(){
+    const transcript = rawEl.value || "";
+    if(transcript.trim().length < 10){
+      toast("Add text to transcript (or press Start and speak).", "warning");
+      return;
+    }
+    
+    aiBtn.disabled = true;
+    setState("AI analyzing…", "warn");
+    toast("AI analysis started…", "info");
+
+    try{
+      // Demo data for testing
+      const demoData = {
+        summary: "This lesson covers the fundamentals of linear algebra, focusing on vector operations and matrix transformations. Students learned about vector addition, scalar multiplication, and basic matrix operations. The session included practical examples and interactive exercises to reinforce understanding. Key concepts included vector spaces, linear independence, and eigenvalues. The lesson emphasized both theoretical foundations and practical applications in computer graphics and data science.",
+        key_points: [
+          "Vector addition and subtraction properties",
+          "Scalar multiplication and its geometric interpretation",
+          "Matrix representation and operations (addition, multiplication)",
+          "Linear transformations and their properties",
+          "Applications in computer graphics and machine learning"
+        ],
+        homework: [
+          "Complete exercises 1-5 on vector operations from textbook Chapter 3",
+          "Watch tutorial video on matrix multiplication and implement in Python",
+          "Solve 3 real-world problems using linear transformations (provide datasets)",
+          "Prepare 2-minute presentation on applications of linear algebra in AI",
+          "Create visual representation of 3D transformations using plotting library"
+        ],
+        recommendations: [
+          "Use more visual examples and animations for matrix operations",
+          "Include interactive coding exercises using Jupyter notebooks",
+          "Break complex topics into smaller segments with checkpoints",
+          "Provide additional practice problems with varying difficulty levels",
+          "Incorporate peer review for homework assignments"
+        ],
+        difficulty_level: "intermediate",
+        estimated_time: "90 minutes",
+        materials_needed: ["Graph paper", "Scientific calculator", "Linear algebra textbook", "Python environment"]
+      };
+      
+      // Update AI analysis display
+      updateAIAnalysis(demoData);
+      
+      // Setup tab switching
+      setupTabSwitching();
+
+      setState("AI ready", "ok");
+      toast("AI analysis complete ✅", "success");
+    } catch(e){
+      console.error(e);
+      setState("AI error", "bad");
+      toast("AI analysis error: " + (e.message || e), "error");
+    } finally{
+      aiBtn.disabled = false;
+    }
+  }
+
+  // ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
+  tabs.addEventListener("click", (e)=>{
+    const el = e.target.closest(".tab");
+    if(!el) return;
+    [...tabs.querySelectorAll(".tab")].forEach(t=>t.classList.remove("active"));
+    el.classList.add("active");
+    const tab = el.dataset.tab;
+    
+    if(tab==="transcript"){
+      tabTranscript.style.display = "block";
+      tabTgam.style.display = "none";
+    }else if(tab==="tgam"){
+      tabTranscript.style.display = "none";
+      tabTgam.style.display = "block";
+      renderTgamData();
+      renderAttentionDrops();
+    }
+  });
+
+  startBtn.onclick = () => startRecognition();
+  stopBtn.onclick = () => stopRecognition();
+
+  saveBtn.onclick = () => {
+    const dt = new Date();
+    const lesson = {
+      id: "lesson_" + dt.getTime(),
+      createdAt: dt.toISOString(),
+      lang: langEl.value,
+      rawText: rawEl.value,
+      summary: document.querySelector('.summary-text').textContent,
+      attentionDrops: attentionDrops
+    };
+    
+    const lessons = JSON.parse(localStorage.getItem("LESSONS") || "[]");
+    lessons.unshift(lesson);
+    localStorage.setItem("LESSONS", JSON.stringify(lessons));
+    
+    savedPill.style.display = "inline-flex";
+    toast("Lesson saved to archive", "success");
+  };
+
+  archiveBtn.onclick = () => window.open("archive.html", "_blank");
+  teacherBtn.onclick = () => window.open("teacher.html", "_blank");
+
+  clearBtn.onclick = () => {
+    stopRecognition();
+    stopTgamSimulation();
+    recognition = null;
+
+    finalText = "";
+    timeline = [];
+    attentionDrops = [];
+
+    t0 = null;
+    if(timer) clearInterval(timer);
+    timer = null;
+
+    rawEl.value = "";
+    timeEl.textContent = "00:00";
+    savedPill.style.display = "none";
+    
+    // Reset AI Analysis
+    document.querySelector('.summary-text').textContent = 'AI analysis will appear here after you click "AI Analyze"';
+    document.getElementById('summaryMetrics').style.display = 'none';
+    const aiStatus = document.getElementById('aiStatus');
+    aiStatus.textContent = 'Ready';
+    aiStatus.className = 'ai-status';
+    
+    const details = document.getElementById('aiDetails');
+    details.classList.remove('expanded');
+    const compact = document.getElementById('aiAnalysisCompact');
+    compact.style.height = 'auto';
+    document.getElementById('expandAIBtn').innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+      </svg>
+      Expand View
+    `;
+    
+    tgamMetrics = {
+      attention: 75,
+      meditation: 65,
+      blink: 120,
+      delta: 45,
+      theta: 35,
+      alpha: 55,
+      beta: 40,
+      gamma: 25,
+      lastDrop: null
+    };
+    
+    setState("Ready", "neutral");
+    toast("Reset complete", "success");
+  };
+
+  aiBtn.onclick = aiAnalyze;
+
+  // ========== ИНИЦИАЛИЗАЦИЯ ==========
+  setState("Ready", "neutral");
+  setupTabSwitching();
+  
+  // Показываем TGAM данные при загрузке
+  renderTgamData();
+  renderAttentionDrops();
+</script>
+</body>
+</html>

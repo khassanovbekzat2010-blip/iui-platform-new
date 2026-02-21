@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IUI — Archive</title>
+  <style>
+    :root{
+      --brand-1:#7c5cff;
+      --brand-2:#4dd6ff;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --bad:#fb7185;
+
+      --bg:#070a14;
+      --bg2:#0b1022;
+      --panel:rgba(255,255,255,.05);
+      --panel2:rgba(255,255,255,.035);
+      --stroke:rgba(255,255,255,.10);
+      --stroke2:rgba(255,255,255,.07);
+
+      --text:#eef2ff;
+      --muted:#a9b7df;
+      --muted2:#7f8bb4;
+
+      --r-xl:22px;
+      --r-lg:18px;
+      --r-md:14px;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --shadow2: 0 10px 30px rgba(0,0,0,.35);
+
+      --max: 1240px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1100px 600px at 15% 0%, rgba(124,92,255,.30), transparent 60%),
+        radial-gradient(900px 520px at 90% 5%, rgba(77,214,255,.20), transparent 60%),
+        radial-gradient(900px 700px at 40% 120%, rgba(34,197,94,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      overflow-x:hidden;
+    }
+    body:before{
+      content:"";
+      position:fixed; inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+      opacity:.22;
+      pointer-events:none;
+    }
+    a{color:inherit}
+    .wrap{max-width:var(--max);margin:0 auto;padding:22px}
+
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      padding:14px 16px;
+      border:1px solid var(--stroke2);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border-radius: calc(var(--r-xl) + 6px);
+      box-shadow: var(--shadow2);
+      position: sticky; top: 14px; z-index: 20;
+      backdrop-filter: blur(12px);
+    }
+    .brand{display:flex;align-items:center;gap:12px;min-width:240px}
+    .logo{
+      width:40px;height:40px;border-radius:14px;
+      background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+      box-shadow: 0 16px 28px rgba(124,92,255,.25);
+      position:relative;
+    }
+    .logo:after{
+      content:"";
+      position:absolute; inset:8px;
+      border-radius:10px;
+      background: rgba(255,255,255,.18);
+      opacity:.35;
+    }
+    .brand h1{margin:0;font-size:15px;line-height:1.1;letter-spacing:.2px}
+    .brand p{margin:2px 0 0 0;font-size:12px;color:var(--muted)}
+
+    .actions{
+      display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;align-items:center;
+    }
+    .input{
+      border:1px solid var(--stroke2);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      border-radius: 999px;
+      padding:10px 14px;
+      outline:none;
+      min-height:40px;
+    }
+    .btn{
+      border:1px solid var(--stroke2);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-radius: 999px;
+      padding:10px 14px;
+      min-height:40px;
+      font-weight: 700;
+      cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;
+      user-select:none;
+    }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(77,214,255,.70));
+      border-color: rgba(255,255,255,.18);
+      box-shadow: 0 18px 34px rgba(124,92,255,.18);
+    }
+    .btn.danger{
+      background: rgba(251,113,133,.14);
+      border-color: rgba(251,113,133,.35);
+    }
+
+    .shell{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:14px;
+      align-items:start;
+    }
+    @media(max-width:980px){ .shell{grid-template-columns:1fr} }
+
+    .card{
+      border: 1px solid var(--stroke2);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.10));
+      border-radius: var(--r-xl);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:14px 16px;
+      border-bottom:1px solid var(--stroke2);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), transparent);
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .cardHead h2{margin:0;font-size:13px;letter-spacing:.3px;text-transform:uppercase;color:#cbd5ff}
+    .sub{color:var(--muted);font-size:12px}
+    .cardBody{padding:14px 16px}
+
+    .pill{
+      padding:6px 10px;border-radius:999px;border:1px solid var(--stroke2);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-size:12px;
+      display:inline-flex;align-items:center;gap:6px;
+      white-space:nowrap;
+    }
+
+    .list{max-height: 72vh; overflow:auto; padding-right:6px}
+    .lesson{
+      border:1px solid var(--stroke2);
+      background: rgba(0,0,0,.20);
+      border-radius: 18px;
+      padding:12px;
+      margin-bottom:10px;
+    }
+    .meta{
+      display:flex;justify-content:space-between;gap:10px;
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:8px;
+      align-items:center;
+    }
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+
+    textarea, pre{
+      width:100%;
+      border:1px solid var(--stroke2);
+      border-radius: 18px;
+      padding: 12px;
+      background: rgba(0,0,0,.26);
+      color: var(--text);
+      outline:none;
+      line-height:1.55;
+      font-size:13px;
+    }
+    textarea{min-height: 180px; resize: vertical;}
+    pre{white-space: pre-wrap; margin:0}
+
+    .sectionTitle{
+      margin:0 0 8px 0;
+      font-size:12px;
+      letter-spacing:.3px;
+      text-transform:uppercase;
+      color: var(--muted);
+      display:flex;align-items:center;gap:8px;
+    }
+
+    .empty{
+      border:1px dashed rgba(255,255,255,.16);
+      background: rgba(255,255,255,.03);
+      border-radius: var(--r-xl);
+      padding:18px;
+      color: var(--muted);
+      line-height:1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>IUI <span style="opacity:.7">/ Archive</span></h1>
+          <p>Saved lessons on this device</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <input class="input" type="month" id="monthFilter" title="Filter by month" />
+        <input class="input" type="text" id="search" placeholder="Search transcript / notes…" />
+        <button class="btn" id="reset">↺ Reset</button>
+        <button class="btn danger" id="clearAll">🗑 Delete all</button>
+      </div>
+    </div>
+
+    <div class="shell">
+      <div class="card">
+        <div class="cardHead">
+          <div>
+            <h2>Saved lessons</h2>
+            <div class="sub" id="count">—</div>
+          </div>
+          <span class="pill"><strong>localStorage</strong></span>
+        </div>
+        <div class="cardBody">
+          <div class="list" id="list"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardHead">
+          <div>
+            <h2>Lesson viewer</h2>
+            <div class="sub" id="meta">Select a lesson on the left</div>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="exportTxt">⬇ Export TXT</button>
+            <button class="btn danger" id="deleteOne" disabled>🗑 Delete</button>
+          </div>
+        </div>
+        <div class="cardBody" id="viewer">
+          <div class="empty" id="emptyState">
+            <h3>Открой урок слева</h3>
+            <div>Тут будут transcript / notes / drops / AI результат.</div>
+          </div>
+
+          <div id="contentState" style="display:none">
+            <div class="sectionTitle">📝 Transcript</div>
+            <textarea id="raw" readonly></textarea>
+            <!-- В actions section добавьте: -->
+<button class="btn" onclick="window.location.href='index.html'">🎤 Live Lesson</button>
+<button class="btn" onclick="window.location.href='teacher.html'">📊 Dashboard</button>
+
+            <div style="height:12px"></div>
+            <div class="sectionTitle">📌 Notes</div>
+            <pre id="notes">—</pre>
+
+            <div style="height:12px"></div>
+            <div class="sectionTitle">📉 Drops</div>
+            <pre id="drops">—</pre>
+
+            <div style="height:12px"></div>
+            <div class="sectionTitle">✨ AI Summary</div>
+            <pre id="aiSummary">—</pre>
+
+            <div style="height:12px"></div>
+            <div class="sectionTitle">🧠 AI Glossary</div>
+            <pre id="aiGlossary">—</pre>
+
+            <div style="height:12px"></div>
+            <div class="sectionTitle">✅ AI Homework</div>
+            <pre id="aiHomework">—</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  const listEl = $("list");
+  const countEl = $("count");
+  const metaEl = $("meta");
+
+  const rawEl = $("raw");
+  const notesEl = $("notes");
+  const dropsEl = $("drops");
+
+  const aiSummaryEl = $("aiSummary");
+  const aiGlossaryEl = $("aiGlossary");
+  const aiHomeworkEl = $("aiHomework");
+
+  const monthFilter = $("monthFilter");
+  const searchEl = $("search");
+  const resetBtn = $("reset");
+  const clearAllBtn = $("clearAll");
+
+  const deleteOneBtn = $("deleteOne");
+  const exportBtn = $("exportTxt");
+
+  const emptyState = $("emptyState");
+  const contentState = $("contentState");
+
+  function getLessons(){ return JSON.parse(localStorage.getItem("LESSONS") || "[]"); }
+  function setLessons(arr){ localStorage.setItem("LESSONS", JSON.stringify(arr)); }
+
+  function fmt(iso){ return new Date(iso).toLocaleString(); }
+  function escapeHtml(s){ return (s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
+
+  let lessons = getLessons();
+  let activeId = null;
+
+  function filteredLessons(){
+    const m = monthFilter.value;
+    const q = (searchEl.value || "").trim().toLowerCase();
+    return lessons.filter(x => {
+      if (m && x.createdAt.slice(0,7) !== m) return false;
+      if (!q) return true;
+      const hay = ((x.rawText||"") + "\n" + (x.notes||"") + "\n" + JSON.stringify(x.ai||{})).toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  function setViewerVisible(has){
+    emptyState.style.display = has ? "none" : "block";
+    contentState.style.display = has ? "block" : "none";
+  }
+
+  function renderList(){
+    const filtered = filteredLessons();
+    countEl.textContent = `${filtered.length} lesson(s)`;
+
+    if(filtered.length === 0){
+      listEl.innerHTML = `<div class="empty"><h3>Пока пусто</h3><div>Сохрани урок на главной странице.</div></div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(x => {
+      const preview = (x.rawText||"").slice(0,140);
+      return `
+      <div class="lesson">
+        <div class="meta">
+          <span><b>${escapeHtml(fmt(x.createdAt))}</b></span>
+          <span class="pill">${escapeHtml(x.lang || "")}</span>
+        </div>
+        <div class="row">
+          <button class="btn primary" onclick="openLesson('${x.id}')">📄 Open</button>
+          <button class="btn danger" onclick="deleteLesson('${x.id}')">🗑 Delete</button>
+        </div>
+        <div style="color:#a9b7df;font-size:12px;margin-top:10px">${escapeHtml(preview)}${(x.rawText||"").length>140 ? "…" : ""}</div>
+      </div>`;
+    }).join("");
+  }
+
+  window.openLesson = (id) => {
+    const x = lessons.find(l => l.id === id);
+    if(!x) return;
+
+    activeId = id;
+    metaEl.textContent = `Date: ${fmt(x.createdAt)} | Lang: ${x.lang || ""}`;
+
+    setViewerVisible(true);
+
+    rawEl.value = x.rawText || "";
+    notesEl.textContent = x.notes || "—";
+
+    const ds = x.drops || [];
+    dropsEl.textContent = ds.length
+      ? ds.map(d => `Drop #${d.id}: ${d.tStart}s → ${d.tEnd}s\n${d.text || "—"}\n`).join("\n")
+      : "—";
+
+    const ai = x.ai || {};
+    aiSummaryEl.textContent = ai.summary || "—";
+    aiGlossaryEl.textContent = ai.glossary || "—";
+    aiHomeworkEl.textContent = ai.homework || "—";
+
+    deleteOneBtn.disabled = false;
+    renderList();
+  };
+
+  window.deleteLesson = (id) => {
+    lessons = lessons.filter(l => l.id !== id);
+    setLessons(lessons);
+
+    if(activeId === id){
+      activeId = null;
+      metaEl.textContent = "Select a lesson on the left";
+      setViewerVisible(false);
+      deleteOneBtn.disabled = true;
+    }
+    renderList();
+  };
+
+  deleteOneBtn.onclick = () => {
+    if(!activeId) return;
+    if(confirm("Delete this lesson?")) window.deleteLesson(activeId);
+  };
+
+  exportBtn.onclick = () => {
+    if(!activeId){ alert("Open a lesson first."); return; }
+    const x = lessons.find(l => l.id === activeId);
+    if(!x) return;
+
+    const content =
+`IUI Export
+Date: ${fmt(x.createdAt)}
+Language: ${x.lang || ""}
+
+=== TRANSCRIPT ===
+${x.rawText || ""}
+
+=== NOTES ===
+${x.notes || ""}
+
+=== DROPS ===
+${(x.drops||[]).map(d => `Drop #${d.id}: ${d.tStart}s → ${d.tEnd}s\n${d.text || "—"}\n`).join("\n")}
+
+=== AI SUMMARY ===
+${(x.ai||{}).summary || ""}
+
+=== AI GLOSSARY ===
+${(x.ai||{}).glossary || ""}
+
+=== AI HOMEWORK ===
+${(x.ai||{}).homework || ""}
+`;
+
+    const blob = new Blob([content], {type:"text/plain;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `iui_lesson_${(x.createdAt||"").slice(0,10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  };
+
+  resetBtn.onclick = () => { monthFilter.value=""; searchEl.value=""; renderList(); };
+
+  clearAllBtn.onclick = () => {
+    if(confirm("Delete ALL lessons from this computer?")){
+      lessons = [];
+      setLessons([]);
+      activeId = null;
+      setViewerVisible(false);
+      deleteOneBtn.disabled = true;
+      renderList();
+    }
+  };
+
+  monthFilter.onchange = renderList;
+  searchEl.oninput = () => { clearTimeout(searchEl._t); searchEl._t=setTimeout(renderList,120); };
+
+  setViewerVisible(false);
+  renderList();
+  
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-manrope: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+  --font-space-grotesk: "Space Grotesk", "Trebuchet MS", "Segoe UI", sans-serif;
+  --background: 204 42% 97%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --primary: 196 76% 42%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 200 26% 92%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 212 32% 93%;
+  --muted-foreground: 215 16% 39%;
+  --accent: 190 36% 91%;
+  --accent-foreground: 222 47% 11%;
+  --border: 213 27% 86%;
+  --input: 213 27% 86%;
+  --ring: 196 76% 42%;
+}
+
+.dark {
+  --background: 220 22% 10%;
+  --foreground: 210 40% 98%;
+  --card: 222 23% 14%;
+  --card-foreground: 210 40% 98%;
+  --primary: 188 79% 49%;
+  --primary-foreground: 222 47% 11%;
+  --secondary: 220 16% 18%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 220 18% 18%;
+  --muted-foreground: 215 20% 70%;
+  --accent: 220 18% 20%;
+  --accent-foreground: 210 40% 98%;
+  --border: 220 14% 24%;
+  --input: 220 14% 24%;
+  --ring: 188 79% 49%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at 5% 5%, rgba(29, 170, 188, 0.14), transparent 34%),
+      radial-gradient(circle at 95% 10%, rgba(84, 137, 210, 0.12), transparent 26%),
+      radial-gradient(circle at 85% 85%, rgba(20, 184, 166, 0.1), transparent 34%);
+  }
+}
