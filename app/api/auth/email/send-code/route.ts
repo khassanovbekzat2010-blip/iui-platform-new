@@ -36,8 +36,7 @@ export async function POST(request: Request) {
       select: { id: true, role: true }
     });
     const otpRole = existingUser?.role ?? requestedRole;
-    const isDevelopment = process.env.NODE_ENV !== "production";
-    const allowDevOtpFallback = isDevelopment && (process.env.DEV_OTP_FALLBACK ?? "true") === "true";
+    const allowDevOtpFallback = (process.env.DEV_OTP_FALLBACK ?? "true") === "true";
 
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
     const ipRate = consumeRateLimit(`otp-send-ip:${ip}`, { windowMs: 15 * 60 * 1000, limit: 20 });
