@@ -65,6 +65,16 @@ type TeacherDashboardDTO = {
     content: string;
     createdAt: string;
   }>;
+  recentLessons: Array<{
+    id: string;
+    title: string;
+    subject: string;
+    aiStatus: string;
+    aiError: string | null;
+    summary: string | null;
+    createdAt: string;
+    durationSec: number;
+  }>;
 };
 
 export default function TeacherPage() {
@@ -304,6 +314,37 @@ export default function TeacherPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Lesson Analysis</CardTitle>
+          <CardDescription>Archive-ready summaries and post-lesson processing results.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {query.data.recentLessons.length === 0 ? <p className="text-muted-foreground">No saved lessons yet.</p> : null}
+          {query.data.recentLessons.map((lesson) => (
+            <div key={lesson.id} className="rounded-xl border border-border/60 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-medium">{lesson.title}</p>
+                <span className="text-xs text-muted-foreground">{lesson.aiStatus}</span>
+              </div>
+              <p className="text-muted-foreground">{lesson.subject} | {new Date(lesson.createdAt).toLocaleString()} | {Math.round(lesson.durationSec / 60)} min</p>
+              <p className="mt-1 text-muted-foreground">
+                {lesson.summary
+                  ? (() => {
+                      try {
+                        const parsed = JSON.parse(lesson.summary) as { text?: string };
+                        return parsed.text ?? lesson.summary;
+                      } catch {
+                        return lesson.summary;
+                      }
+                    })()
+                  : lesson.aiError || "Summary is being prepared."}
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { HomeworkSubmissionStatus, LessonParticipantState, LessonProcessingStatus, UserRole } from "@prisma/client";
+import { HomeworkSubmissionStatus, LessonParticipantState, LessonProcessingStatus, RecommendationType, UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -10,6 +10,7 @@ import { ensureUserRows } from "@/lib/edu-service";
 import { processLessonAi } from "@/lib/lesson-ai";
 import { buildStorageObject } from "@/lib/storage";
 import { TranscriptLine } from "@/lib/types";
+import { grantFocusXp } from "@/server/iui/gamification.service";
 
 const transcriptLineSchema = z.object({
   speaker: z.string().min(1),
@@ -183,7 +184,12 @@ export async function POST(request: Request) {
       summary = ai.summary;
       keyTopics = ai.keyTopics;
       recommendations = ai.recommendations;
-      generatedHomework = ai.homework.map((item) => item.title);
+      generatedHomework = ai.homework.map((item) => item.title).filter(Boolean);
+      if (!generatedHomework.length) {
+        generatedHomework = [
+          `Write a short recap of ${parsed.subject} and solve one follow-up task based on: ${ai.keyTopics[0] ?? parsed.title}.`
+        ];
+      }
 
       await db.lesson.update({
         where: { id: lesson.id },
@@ -210,6 +216,50 @@ export async function POST(request: Request) {
 
         for (const studentId of participantIds) {
           await ensureUserRows(studentId);
+          await grantFocusXp({
+            studentId,
+            xp: 12,
+            source: "LESSON_COMPLETED",
+            reason: `Completed lesson: ${parsed.title}`
+          });
+
+          await db.assignment.create({
+            data: {
+              studentId,
+              lessonId: lesson.id,
+              title: `${parsed.subject} adaptive follow-up`,
+              description:
+                ai.recommendations[0] ??
+                `Review the main concept from ${parsed.title} and answer a short reflective prompt.`,
+              difficulty: "adaptive",
+              generatedByAI: true,
+              type: "lesson_follow_up",
+              status: "PENDING",
+              reason: ai.difficultMoments[0] ?? "Generated from saved lesson summary and live participation."
+            }
+          });
+
+          await db.aIRecommendation.createMany({
+            data: [
+              {
+                studentId,
+                teacherId: user.id,
+                recommendationType: RecommendationType.ADAPTIVE_TASK,
+                content:
+                  ai.recommendations[0] ??
+                  `Student should review ${ai.keyTopics[0] ?? parsed.subject} with one short scaffolded task.`
+              },
+              {
+                studentId,
+                teacherId: user.id,
+                recommendationType: RecommendationType.TEACHER_INSIGHT,
+                content:
+                  ai.recommendations.join(" ") ||
+                  `Lesson ${parsed.title} was saved. Use the archive summary to plan the next explanation block.`
+              }
+            ]
+          });
+
           for (const [index, task] of generatedHomework.entries()) {
             const homework = await db.homework.create({
               data: {
@@ -219,7 +269,7 @@ export async function POST(request: Request) {
                 title: `AI Lesson Homework #${index + 1}`,
                 subject: parsed.subject,
                 grade: Number(parsed.classroomName?.match(/\d+/)?.[0] ?? 9),
-                topic: "Generated from live lesson",
+                topic: ai.keyTopics[index] ?? "Generated from live lesson",
                 description: task,
                 content: task,
                 generatedByAI: true,
@@ -250,6 +300,60 @@ export async function POST(request: Request) {
     } catch (error) {
       aiAvailable = false;
       aiError = error instanceof Error ? error.message : "AI processing failed";
+      if (participantIds.length) {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 3);
+
+        for (const studentId of participantIds) {
+          await ensureUserRows(studentId);
+          await db.assignment.create({
+            data: {
+              studentId,
+              lessonId: lesson.id,
+              title: `${parsed.subject} recap task`,
+              description: `Review the saved lesson "${parsed.title}" and write a short summary in your own words.`,
+              difficulty: "medium",
+              generatedByAI: false,
+              type: "lesson_recap",
+              status: "PENDING",
+              reason: "Fallback task created because AI post-processing was unavailable."
+            }
+          });
+          const homework = await db.homework.create({
+            data: {
+              createdBy: user.id,
+              studentId,
+              lessonId: lesson.id,
+              title: "Lesson recap homework",
+              subject: parsed.subject,
+              grade: Number(parsed.classroomName?.match(/\d+/)?.[0] ?? 9),
+              topic: parsed.title,
+              description: `Open the lesson archive, read your notes, and prepare a concise recap with one solved example.`,
+              content: `Open the lesson archive, read your notes, and prepare a concise recap with one solved example.`,
+              generatedByAI: false,
+              difficulty: "medium",
+              dueDate,
+              points: 10
+            },
+            select: { id: true }
+          });
+
+          await db.homeworkSubmission.upsert({
+            where: {
+              homeworkId_userId: {
+                homeworkId: homework.id,
+                userId: studentId
+              }
+            },
+            create: {
+              homeworkId: homework.id,
+              userId: studentId,
+              status: HomeworkSubmissionStatus.NOT_STARTED
+            },
+            update: {}
+          });
+        }
+      }
       await db.lesson.update({
         where: { id: lesson.id },
         data: {

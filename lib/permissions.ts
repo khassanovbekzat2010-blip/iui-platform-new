@@ -15,6 +15,15 @@ export function canAccessPath(role: AppRole, pathname: string, studentId?: strin
   if (pathname.startsWith("/analytics")) {
     return false;
   }
+  if (pathname.startsWith("/lesson")) {
+    return false;
+  }
+  if (pathname.startsWith("/journey")) {
+    return false;
+  }
+  if (pathname.startsWith("/shop")) {
+    return false;
+  }
   if (pathname.startsWith("/teacher")) {
     return false;
   }

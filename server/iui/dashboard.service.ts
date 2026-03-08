@@ -11,7 +11,7 @@ function toISO(date: Date | null | undefined) {
 export async function getStudentDashboardData(studentId: string) {
   await ensureStudentGamificationState(studentId);
 
-  const [student, character, recentEEG, assignments, homeworks, recommendations, missions, achievements] =
+  const [student, character, recentEEG, assignments, homeworks, recommendations, missions, achievements, submissions, xpTimeline, recentLessons] =
     await Promise.all([
       db.user.findUnique({
         where: { id: studentId },
@@ -122,6 +122,51 @@ export async function getStudentDashboardData(studentId: string) {
           code: true,
           unlockedAt: true
         }
+      }),
+      db.homeworkSubmission.findMany({
+        where: { userId: studentId },
+        orderBy: { updatedAt: "desc" },
+        take: 12,
+        select: {
+          homeworkId: true,
+          status: true,
+          aiScore: true,
+          submittedAt: true,
+          reviewedAt: true
+        }
+      }),
+      db.xPProgress.findMany({
+        where: { studentId },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        select: {
+          id: true,
+          xp: true,
+          level: true,
+          source: true,
+          reason: true,
+          createdAt: true
+        }
+      }),
+      db.lesson.findMany({
+        where: {
+          participants: {
+            some: {
+              userId: studentId
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+        select: {
+          id: true,
+          title: true,
+          subject: true,
+          aiStatus: true,
+          createdAt: true,
+          durationSec: true,
+          summary: true
+        }
       })
     ]);
 
@@ -132,9 +177,12 @@ export async function getStudentDashboardData(studentId: string) {
   const latest = recentEEG[0] ?? null;
   const eegSummary = summarizeEEGHistory(recentEEG);
   const lowAttentionStreak = recentEEG.slice(0, 5).filter((row) => row.attention < 40).length;
+  const submissionMap = new Map(submissions.map((item) => [item.homeworkId, item]));
   const adaptiveHint =
     lowAttentionStreak >= 3
       ? "Attention dropped. Suggested adaptation: 2-minute interactive task + brain break."
+      : recentLessons.length
+      ? "Lesson archive is ready. Review summary and complete the assigned homework before the next class."
       : "Stable lesson focus. Keep current pace and reinforce with short reflective questions.";
 
   return {
@@ -182,10 +230,17 @@ export async function getStudentDashboardData(studentId: string) {
       ...item,
       createdAt: item.createdAt.toISOString()
     })),
-    homeworks: homeworks.map((item) => ({
-      ...item,
-      dueDate: item.dueDate.toISOString()
-    })),
+    homeworks: homeworks.map((item) => {
+      const submission = submissionMap.get(item.id);
+      return {
+        ...item,
+        dueDate: item.dueDate.toISOString(),
+        submissionStatus: submission?.status ?? "NOT_STARTED",
+        aiScore: submission?.aiScore ?? null,
+        submittedAt: submission?.submittedAt?.toISOString() ?? null,
+        reviewedAt: submission?.reviewedAt?.toISOString() ?? null
+      };
+    }),
     recommendations: recommendations.map((item) => ({
       ...item,
       createdAt: item.createdAt.toISOString()
@@ -197,33 +252,62 @@ export async function getStudentDashboardData(studentId: string) {
     achievements: achievements.map((item) => ({
       ...item,
       unlockedAt: item.unlockedAt.toISOString()
+    })),
+    progress: {
+      xpTimeline: xpTimeline.map((item) => ({
+        ...item,
+        createdAt: item.createdAt.toISOString()
+      })),
+      completedHomework: submissions.filter((item) => item.status === "ACCEPTED").length,
+      pendingHomework: homeworks.filter((item) => (submissionMap.get(item.id)?.status ?? "NOT_STARTED") !== "ACCEPTED").length
+    },
+    recentLessons: recentLessons.map((item) => ({
+      ...item,
+      createdAt: item.createdAt.toISOString()
     }))
   };
 }
 
 export async function getTeacherDashboardData(teacherId: string) {
-  const classrooms = await db.classroom.findMany({
-    where: { teacherId },
-    select: {
-      id: true,
-      name: true,
-      grade: true,
-      enrollments: {
-        select: {
-          student: {
-            select: {
-              id: true,
-              name: true,
-              studentProfile: {
-                select: { grade: true }
+  const [classrooms, recentLessons] = await Promise.all([
+    db.classroom.findMany({
+      where: { teacherId },
+      select: {
+        id: true,
+        name: true,
+        grade: true,
+        enrollments: {
+          select: {
+            student: {
+              select: {
+                id: true,
+                name: true,
+                studentProfile: {
+                  select: { grade: true }
+                }
               }
             }
           }
         }
+      },
+      orderBy: { name: "asc" }
+    }),
+    db.lesson.findMany({
+      where: { teacherId },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: {
+        id: true,
+        title: true,
+        subject: true,
+        aiStatus: true,
+        aiError: true,
+        summary: true,
+        createdAt: true,
+        durationSec: true
       }
-    },
-    orderBy: { name: "asc" }
-  });
+    })
+  ]);
 
   const studentIds = Array.from(
     new Set(classrooms.flatMap((classroom) => classroom.enrollments.map((entry) => entry.student.id)))
@@ -395,6 +479,10 @@ export async function getTeacherDashboardData(teacherId: string) {
       reviewedAt: item.reviewedAt?.toISOString() ?? null
     })),
     recommendations: teacherInsights.map((item) => ({
+      ...item,
+      createdAt: item.createdAt.toISOString()
+    })),
+    recentLessons: recentLessons.map((item) => ({
       ...item,
       createdAt: item.createdAt.toISOString()
     }))

@@ -1,18 +1,6 @@
 "use client";
 
-import {
-  Activity,
-  Brain,
-  FileText,
-  ListChecks,
-  Mic,
-  Pause,
-  Play,
-  RefreshCcw,
-  Save,
-  Search,
-  Users
-} from "lucide-react";
+import { Activity, Brain, FileText, Mic, Pause, Play, RefreshCcw, Save, Search, Users } from "lucide-react";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +13,7 @@ import { apiRequest } from "@/lib/api";
 import { useAppStore } from "@/store/app-store";
 
 type LessonStatus = "IDLE" | "RECORDING" | "PAUSED" | "SAVED" | "AI_PROCESSING" | "AI_FAILED";
-type TabId = "live" | "transcript" | "summary" | "materials";
+type TabId = "live" | "transcript" | "summary";
 
 type TranscriptLine = {
   id: string;
@@ -179,7 +167,6 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
   const [subject, setSubject] = useState("Physics");
   const [classroomName, setClassroomName] = useState("Class 9A");
   const [notes, setNotes] = useState("");
-  const [materialsNote, setMaterialsNote] = useState("");
   const [transcriptInput, setTranscriptInput] = useState("");
   const [search, setSearch] = useState("");
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
@@ -203,6 +190,7 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
   const [liveTranscriptPreview, setLiveTranscriptPreview] = useState("");
   const [latestReading, setLatestReading] = useState<LatestReadingResponse["reading"] | null>(null);
   const [deviceStreamState, setDeviceStreamState] = useState<"idle" | "paired" | "live" | "stale">("idle");
+  const [generatedApiKey, setGeneratedApiKey] = useState("");
 
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -700,7 +688,7 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
     }
     setBusy(true);
     try {
-      await apiRequest("/api/devices", {
+      const response = await apiRequest<{ generatedApiKey?: string | null }>("/api/devices", {
         method: "POST",
         body: JSON.stringify({
           studentId: bindStudentId,
@@ -708,11 +696,17 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
           deviceName: bindDeviceName.trim() || "ESP32 TGAM"
         })
       });
+      setGeneratedApiKey(response.generatedApiKey ?? "");
       const updated = await apiRequest<{ devices: BoundDevice[] }>("/api/devices");
       setDeviceBindings(updated.devices);
       setActiveStudentId(bindStudentId);
       setSelectedParticipantIds([bindStudentId]);
-      pushToast("Device bound", "ESP32 is linked to selected student.");
+      pushToast(
+        "Device bound",
+        response.generatedApiKey
+          ? "ESP32 is linked to selected student. Copy the generated API key shown below."
+          : "ESP32 is linked to selected student."
+      );
     } catch (error) {
       pushToast("Binding failed", error instanceof Error ? error.message : "Request failed");
     } finally {
@@ -781,8 +775,7 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
   const tabs: Array<{ id: TabId; label: string; icon: ReactNode }> = [
     { id: "live", label: "Live Feed", icon: <Activity className="h-4 w-4" /> },
     { id: "transcript", label: "Transcript", icon: <FileText className="h-4 w-4" /> },
-    { id: "summary", label: "AI Summary", icon: <Brain className="h-4 w-4" /> },
-    { id: "materials", label: "Materials", icon: <ListChecks className="h-4 w-4" /> }
+    { id: "summary", label: "AI Summary", icon: <Brain className="h-4 w-4" /> }
   ];
 
   return (
@@ -1054,26 +1047,6 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
               </div>
             ) : null}
 
-            {tab === "materials" ? (
-              <div className="space-y-3">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Attached materials and notes</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Textarea
-                      className="min-h-[140px]"
-                      value={materialsNote}
-                      onChange={(event) => setMaterialsNote(event.target.value)}
-                      placeholder="Add quick links, file notes, quiz ideas, or reminders..."
-                    />
-                    <div className="rounded-xl border border-border/60 p-3 text-sm text-muted-foreground">
-                      Files are stored by lesson metadata in your configured S3-compatible storage.
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : null}
           </CardContent>
         </Card>
 
@@ -1202,6 +1175,11 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
                   <div className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 p-2 text-xs text-muted-foreground">
                     Manual API key is no longer required for local paired ESP32 devices.
                   </div>
+                  {generatedApiKey ? (
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 text-xs text-muted-foreground">
+                      Generated API key: <span className="font-mono text-foreground">{generatedApiKey}</span>
+                    </div>
+                  ) : null}
                   {deviceBindings.slice(0, 6).map((device) => (
                     <div key={device.id} className="rounded-lg border border-border/60 p-2 text-xs text-muted-foreground">
                       {device.deviceName} | {device.id} | student: {participantNameMap.get(device.studentId) ?? device.studentId} |{" "}

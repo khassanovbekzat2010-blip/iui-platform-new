@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Brain, Flame, Sparkles, Swords, Trophy } from "lucide-react";
+import { Activity, Brain, CheckCircle2, Flame, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -63,6 +63,10 @@ type StudentDashboardDTO = {
     difficulty: string | null;
     dueDate: string;
     generatedByAI: boolean;
+    submissionStatus: string;
+    aiScore: number | null;
+    submittedAt: string | null;
+    reviewedAt: string | null;
   }>;
   recommendations: Array<{
     id: string;
@@ -82,6 +86,27 @@ type StudentDashboardDTO = {
     title: string;
     code: string;
     unlockedAt: string;
+  }>;
+  progress: {
+    xpTimeline: Array<{
+      id: string;
+      xp: number;
+      level: number;
+      source: string;
+      reason: string | null;
+      createdAt: string;
+    }>;
+    completedHomework: number;
+    pendingHomework: number;
+  };
+  recentLessons: Array<{
+    id: string;
+    title: string;
+    subject: string;
+    aiStatus: string;
+    createdAt: string;
+    durationSec: number;
+    summary: string | null;
   }>;
 };
 
@@ -224,7 +249,7 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2"><Swords className="h-4 w-4" />Hero Journey</CardDescription>
+            <CardDescription className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />Hero Progress</CardDescription>
             <CardTitle>Lvl {data.hero.level}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
@@ -277,8 +302,8 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <p>{data.eeg.adaptiveHint}</p>
-            <Link href="/lesson">
-              <Button variant="outline" className="w-full">Open Live Lesson</Button>
+            <Link href="/homework">
+              <Button variant="outline" className="w-full">Open Homework</Button>
             </Link>
           </CardContent>
         </Card>
@@ -296,8 +321,66 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground">{item.subject}: {item.topic}</p>
                 <p className="text-xs text-muted-foreground">Difficulty: {item.difficulty ?? "adaptive"}</p>
                 <p className="text-xs text-muted-foreground">Due: {item.dueDate.slice(0, 10)}</p>
+                <p className="text-xs text-muted-foreground">Status: {item.submissionStatus}</p>
+                {typeof item.aiScore === "number" ? <p className="text-xs text-muted-foreground">AI score: {item.aiScore}/100</p> : null}
               </div>
             ))}
+            {!data.homeworks.length ? <p className="text-sm text-muted-foreground">No homework assigned yet.</p> : null}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Progress</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-xl border border-border/60 p-3 text-sm">
+              <p className="font-medium">Completed homework</p>
+              <p className="text-2xl font-semibold">{data.progress.completedHomework}</p>
+            </div>
+            <div className="rounded-xl border border-border/60 p-3 text-sm">
+              <p className="font-medium">Pending homework</p>
+              <p className="text-2xl font-semibold">{data.progress.pendingHomework}</p>
+            </div>
+            {data.progress.xpTimeline.map((event) => (
+              <div key={event.id} className="rounded-xl border border-border/60 p-3 text-sm">
+                <p className="font-medium">{event.source}</p>
+                <p className="text-muted-foreground">{event.reason ?? "Progress event"}</p>
+                <p className="text-xs text-muted-foreground">+{event.xp} XP | Level {event.level}</p>
+              </div>
+            ))}
+            {!data.progress.xpTimeline.length ? <p className="text-sm text-muted-foreground">Progress will appear after lesson or homework events.</p> : null}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4" />Achievements</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.achievements.map((achievement) => (
+              <div key={achievement.id} className="rounded-xl border border-border/60 p-3 text-sm">
+                <p className="font-medium">{achievement.title}</p>
+                <p className="text-xs text-muted-foreground">{achievement.code}</p>
+              </div>
+            ))}
+            {!data.achievements.length ? <p className="text-sm text-muted-foreground">First achievement is waiting.</p> : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Lesson Archive</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.recentLessons.map((lesson) => (
+              <Link key={lesson.id} href={`/archive/${lesson.id}`} className="block rounded-xl border border-border/60 p-3 text-sm transition hover:border-primary/40 hover:bg-primary/5">
+                <p className="font-medium">{lesson.title}</p>
+                <p className="text-muted-foreground">{lesson.subject} | {new Date(lesson.createdAt).toLocaleDateString()}</p>
+                <p className="text-xs text-muted-foreground">{lesson.aiStatus} | {Math.round(lesson.durationSec / 60)} min</p>
+              </Link>
+            ))}
+            {!data.recentLessons.length ? <p className="text-sm text-muted-foreground">No lesson archive records yet.</p> : null}
           </CardContent>
         </Card>
         <Card>
@@ -313,20 +396,6 @@ export default function DashboardPage() {
               </div>
             ))}
             {!data.missions.length ? <p className="text-sm text-muted-foreground">No active missions.</p> : null}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4" />Achievements</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {data.achievements.map((achievement) => (
-              <div key={achievement.id} className="rounded-xl border border-border/60 p-3 text-sm">
-                <p className="font-medium">{achievement.title}</p>
-                <p className="text-xs text-muted-foreground">{achievement.code}</p>
-              </div>
-            ))}
-            {!data.achievements.length ? <p className="text-sm text-muted-foreground">First achievement is waiting.</p> : null}
           </CardContent>
         </Card>
       </div>

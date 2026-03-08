@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -114,7 +115,7 @@ export default function ArchivePage() {
           ) : null}
           {!loading
             ? filtered.map((item) => (
-                <div key={item.id} className="rounded-xl border border-border/60 p-4">
+                <Link key={item.id} href={`/archive/${item.id}`} className="block rounded-xl border border-border/60 p-4 transition hover:border-primary/40 hover:bg-primary/5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="font-medium">{item.title}</p>
@@ -143,7 +144,7 @@ export default function ArchivePage() {
                     <p className="mt-2 text-sm text-muted-foreground">AI is temporarily unavailable.</p>
                   ) : null}
                   {item.aiError ? <p className="mt-1 text-xs text-rose-500">{item.aiError}</p> : null}
-                </div>
+                </Link>
               ))
             : null}
         </CardContent>
@@ -151,4 +152,3 @@ export default function ArchivePage() {
     </section>
   );
 }
-
