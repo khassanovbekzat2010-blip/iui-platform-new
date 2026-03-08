@@ -5,6 +5,12 @@ let initialized = false;
 export async function ensureDatabaseReady() {
   if (initialized) return;
 
+  const connectionUrl = process.env.POSTGRES_DATABASE_URL ?? process.env.DATABASE_URL ?? "";
+  if (connectionUrl.startsWith("postgresql://") || connectionUrl.startsWith("postgres://")) {
+    initialized = true;
+    return;
+  }
+
   await db.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "Profile" (
       "userId" TEXT PRIMARY KEY NOT NULL,
