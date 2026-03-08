@@ -551,6 +551,35 @@ export async function getSchoolAnalyticsData() {
     students: classroom.enrollments.length
   }));
 
+  const nextLessonPlan =
+    engagementSummary.avgEngagement < 45
+      ? {
+          focus: "Низкая вовлеченность",
+          actions: [
+            "Начните урок с короткого интерактивного вопроса или мини-квиза на 2-3 минуты.",
+            "Разбейте объяснение на блоки по 5-7 минут с быстрыми проверками понимания.",
+            "Добавьте работу в парах или мини-группах с конкретной ролью для каждого ученика.",
+            "Смените формат: после теории дайте один наглядный пример и один практический кейс."
+          ]
+        }
+      : engagementSummary.avgEngagement < 70
+      ? {
+          focus: "Средняя вовлеченность",
+          actions: [
+            "Сохраните текущий темп, но добавьте одну collaborative activity в середине урока.",
+            "Попросите сильных учеников кратко объяснить решение группе.",
+            "Используйте один challenge-вопрос в конце каждого смыслового блока."
+          ]
+        }
+      : {
+          focus: "Высокая вовлеченность",
+          actions: [
+            "Можно усложнить следующий урок через problem-based activity или mini debate.",
+            "Дайте ученикам больше самостоятельного выбора способа решения.",
+            "Добавьте один challenge-level блок для сильных учеников."
+          ]
+        };
+
   return {
     summary: {
       totalClasses: classrooms.length,
@@ -577,6 +606,7 @@ export async function getSchoolAnalyticsData() {
       .map((row) => ({
         label: row.timestamp.toISOString().slice(11, 16),
         engagement: row.engagementScore
-      }))
+      })),
+    nextLessonPlan
   };
 }

@@ -1,6 +1,6 @@
 export type UserStatus = "online" | "offline" | "break";
 export type AppRole = "teacher" | "student" | "admin";
-export type AppLanguage = "ru" | "en";
+export type AppLanguage = "ru" | "kz";
 
 export interface NavItem {
   label: string;

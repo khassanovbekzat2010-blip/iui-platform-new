@@ -38,7 +38,12 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
 
       <div className="flex items-center gap-2 md:gap-3">
         <ThemeToggle />
-        <Button variant="outline" size="sm" className="relative" onClick={() => pushToast("Notifications", "No new notifications")}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="relative"
+          onClick={() => pushToast(language === "kz" ? "Хабарламалар" : "Уведомления", language === "kz" ? "Жаңа хабарлама жоқ" : "Новых уведомлений нет")}
+        >
           <Bell className="h-4 w-4" />
           <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-rose-500" />
         </Button>
@@ -54,10 +59,10 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem className="gap-2" onClick={() => router.push(user?.role === "student" ? "/hero" : "/settings")}>
               <User className="h-4 w-4" />
-              {user?.role === "student" ? "Profile" : "Account"}
+              {user?.role === "student" ? (language === "kz" ? "Профиль" : "Профиль") : language === "kz" ? "Аккаунт" : "Аккаунт"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/settings")}>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings")}>{language === "kz" ? "Баптаулар" : "Настройки"}</DropdownMenuItem>
             <DropdownMenuItem
               onClick={async () => {
                 await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
@@ -65,7 +70,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
                 router.push("/login");
               }}
             >
-              Sign out
+              {language === "kz" ? "Шығу" : "Выйти"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -73,4 +78,3 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
     </header>
   );
 }
-

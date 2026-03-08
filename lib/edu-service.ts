@@ -140,6 +140,28 @@ export async function refreshStreak(userId: string, dateValue = new Date()) {
     }
   });
 
+  await db.streak.upsert({
+    where: { userId },
+    create: {
+      userId,
+      current: streakDays,
+      best: streakDays,
+      lastActiveDate: today
+    },
+    update: {
+      current: streakDays,
+      best: Math.max(streakDays, game.streakDays),
+      lastActiveDate: today
+    }
+  });
+
+  await db.studentProfile.updateMany({
+    where: { userId },
+    data: {
+      streak: streakDays
+    }
+  });
+
   if (bonusXp > 0) {
     await addXp(userId, bonusXp);
   }

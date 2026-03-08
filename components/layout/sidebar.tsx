@@ -41,10 +41,23 @@ const iconMap = {
 export function Sidebar() {
   const pathname = usePathname();
   const authUser = useAppStore((state) => state.authUser);
+  const language = useAppStore((state) => state.language);
   const navRole = authUser?.role === "admin" ? "teacher" : authUser?.role;
   const items = navigationItems.filter((item) =>
     navRole ? (item.roles ? item.roles.includes(navRole) : true) : false
   );
+  const labelMap: Record<string, { ru: string; kz: string }> = {
+    Goals: { ru: "Цели", kz: "Мақсаттар" },
+    Dashboard: { ru: "Панель", kz: "Басқару панелі" },
+    "Live Lesson": { ru: "Живой урок", kz: "Тікелей сабақ" },
+    "Lesson Archive": { ru: "Архив уроков", kz: "Сабақ мұрағаты" },
+    Hero: { ru: "Герой", kz: "Кейіпкер" },
+    Teacher: { ru: "Учитель", kz: "Мұғалім" },
+    Homework: { ru: "Домашка", kz: "Үй тапсырмасы" },
+    Students: { ru: "Ученики", kz: "Оқушылар" },
+    Analytics: { ru: "Аналитика", kz: "Талдау" },
+    Settings: { ru: "Настройки", kz: "Баптаулар" }
+  };
 
   return (
     <aside className="sticky top-0 hidden h-screen w-72 border-r border-border/50 bg-card/80 px-4 py-6 backdrop-blur md:block">
@@ -66,7 +79,7 @@ export function Sidebar() {
               )}
             >
               <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
+              <span>{labelMap[item.label]?.[language] ?? item.label}</span>
             </Link>
           );
         })}

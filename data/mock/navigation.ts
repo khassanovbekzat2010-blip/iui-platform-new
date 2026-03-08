@@ -1,7 +1,7 @@
 import { NavItem } from "@/lib/types";
 
 export const navigationItems: NavItem[] = [
-  { label: "Onboarding", href: "/onboarding", icon: "flag", roles: ["teacher", "student"] },
+  { label: "Goals", href: "/onboarding", icon: "flag", roles: ["student"] },
   { label: "Dashboard", href: "/dashboard", icon: "layout-dashboard", roles: ["teacher", "student"] },
   { label: "Live Lesson", href: "/lesson", icon: "mic", roles: ["teacher"] },
   { label: "Lesson Archive", href: "/archive", icon: "calendar-check-2", roles: ["teacher", "student"] },

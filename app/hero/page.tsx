@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Brain, Coins, Gem, Shield, Sparkles, Star } from "lucide-react";
+import { Brain, Shield, Sparkles, Star } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -20,8 +20,6 @@ type HeroDTO = {
     creativity: number;
     discipline: number;
     avatarUrl: string;
-    coins: number;
-    gems: number;
   } | null;
   inventory: Array<{ id: string; quantity: number; itemDefinition: { name: string; rarity: string; type: string } }>;
   achievements: Array<{ unlockedAt: string; achievementDefinition: { title: string } }>;
@@ -109,23 +107,6 @@ export default function HeroPage() {
         </Card>
 
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resources</CardTitle>
-              <CardDescription>Reward economy attached to the student profile.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-border/60 p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Coins className="h-4 w-4" />Coins</div>
-                <p className="mt-2 text-2xl font-semibold">{hero.coins}</p>
-              </div>
-              <div className="rounded-xl border border-border/60 p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Gem className="h-4 w-4" />Gems</div>
-                <p className="mt-2 text-2xl font-semibold">{hero.gems}</p>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle>Unlocked Items</CardTitle>

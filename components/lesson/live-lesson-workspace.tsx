@@ -854,7 +854,6 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base">Simple Flow</CardTitle>
-                      <CardDescription>1. Choose student. 2. Pair ESP32. 3. Press Start. 4. Stop and save to generate summary and homework.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-2 md:grid-cols-3 text-sm">
                       <div className="rounded-xl border border-border/60 p-3">
@@ -867,7 +866,7 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
                       </div>
                       <div className="rounded-xl border border-border/60 p-3">
                         <p className="font-medium">Step 3</p>
-                        <p className="text-muted-foreground">{status === "RECORDING" ? "Lesson is recording" : "Press Start to begin lesson"}</p>
+                        <p className="text-muted-foreground">{status === "RECORDING" ? "Lesson is recording" : ""}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -1120,7 +1119,6 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="rounded-xl border border-border/60 p-3">
-                <p className="font-medium">EEG / TGAM</p>
                 <p className="text-muted-foreground">
                   {deviceStreamState === "live"
                     ? "Fresh EEG packets are arriving from ESP32."
@@ -1137,7 +1135,6 @@ export function LiveLessonWorkspace({ user, archive, participants }: Props) {
                 </p>
               </div>
               <div className="rounded-xl border border-border/60 p-3">
-                <p className="font-medium">Lesson Microphone</p>
                 <p className="text-muted-foreground">{micStatus === "recording" ? "Recording" : micStatus === "paused" ? "Paused" : micStatus === "denied" ? "Denied" : "Idle"}</p>
                 <p className="text-xs text-muted-foreground">
                   {micError ? micError : "Teacher account must grant mic permission when Start is pressed."}

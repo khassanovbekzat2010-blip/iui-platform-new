@@ -37,6 +37,8 @@ export default function OnboardingPage() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(["Physics"]);
   const [archetype, setArchetype] = useState<"Explorer" | "Scholar" | "Builder">("Scholar");
 
+  const effectiveRole = user?.role ?? role;
+
   const onboardingMutation = useMutation({
     mutationFn: async () => {
       const userId = getJourneyUserId(user);
@@ -46,7 +48,7 @@ export default function OnboardingPage() {
         method: "POST",
         body: JSON.stringify({
           userId,
-          role,
+          role: effectiveRole,
           grade,
           subjects: selectedSubjects,
           goal,
@@ -69,8 +71,14 @@ export default function OnboardingPage() {
   return (
     <section className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Hero Onboarding</h2>
-        <p className="text-muted-foreground">Configure your role, learning goals and journey profile.</p>
+        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">
+          {effectiveRole === "student" ? "Goals" : "Profile Setup"}
+        </h2>
+        <p className="text-muted-foreground">
+          {effectiveRole === "student"
+            ? "Set weekly goals, subjects, and the development direction for your hero profile."
+            : "Configure your teaching profile and personalization defaults."}
+        </p>
       </div>
 
       <Card>
@@ -79,18 +87,25 @@ export default function OnboardingPage() {
           <CardDescription>This affects permissions, dashboards and learning path.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-1 text-sm">
-            Role
-            <select
-              className="w-full rounded-xl border border-border/60 bg-background px-3 py-2"
-              value={role}
-              onChange={(event) => setRole(event.target.value as "student" | "teacher" | "admin")}
-            >
-              <option value="student">Student</option>
-              <option value="teacher">Teacher</option>
-              <option value="admin">Admin</option>
-            </select>
-          </label>
+          {user?.role ? (
+            <div className="space-y-1 text-sm">
+              <span>Role</span>
+              <div className="rounded-xl border border-border/60 bg-background px-3 py-2">{effectiveRole}</div>
+            </div>
+          ) : (
+            <label className="space-y-1 text-sm">
+              Role
+              <select
+                className="w-full rounded-xl border border-border/60 bg-background px-3 py-2"
+                value={role}
+                onChange={(event) => setRole(event.target.value as "student" | "teacher" | "admin")}
+              >
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+          )}
 
           <label className="space-y-1 text-sm">
             Grade
@@ -153,9 +168,8 @@ export default function OnboardingPage() {
         disabled={selectedSubjects.length === 0 || onboardingMutation.isPending}
         onClick={() => onboardingMutation.mutate()}
       >
-        Save Onboarding
+        {effectiveRole === "student" ? "Save Goals" : "Save Profile"}
       </Button>
     </section>
   );
 }
-

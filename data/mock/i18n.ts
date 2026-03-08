@@ -6,7 +6,7 @@ export const dictionary = {
   ru: {
     appTagline: "AI образовательная платформа",
     loginTitle: "Вход в IUI",
-    loginHint: "Используйте тестовый аккаунт",
+    loginHint: "Используйте код подтверждения",
     email: "Email",
     password: "Пароль",
     signIn: "Войти",
@@ -18,19 +18,19 @@ export const dictionary = {
     aiDone: "AI анализ готов",
     noPermission: "Нет доступа к разделу"
   },
-  en: {
-    appTagline: "AI educational platform",
-    loginTitle: "Sign in to IUI",
-    loginHint: "Use mock account",
+  kz: {
+    appTagline: "AI білім беру платформасы",
+    loginTitle: "IUI жүйесіне кіру",
+    loginHint: "Растау кодын пайдаланыңыз",
     email: "Email",
-    password: "Password",
-    signIn: "Sign in",
-    teacher: "Teacher",
-    student: "Student",
-    settingsSaved: "Settings saved",
-    recordingStarted: "Recording started",
-    recordingStopped: "Recording stopped",
-    aiDone: "AI analysis ready",
-    noPermission: "No permission for this page"
+    password: "Құпиясөз",
+    signIn: "Кіру",
+    teacher: "Мұғалім",
+    student: "Оқушы",
+    settingsSaved: "Баптаулар сақталды",
+    recordingStarted: "Жазба басталды",
+    recordingStopped: "Жазба аяқталды",
+    aiDone: "AI талдауы дайын",
+    noPermission: "Бұл бөлімге қолжетім жоқ"
   }
 } as const;

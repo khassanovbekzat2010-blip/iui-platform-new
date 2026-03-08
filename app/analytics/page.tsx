@@ -22,6 +22,10 @@ type SchoolDashboardDTO = {
   subjects: Array<{ subject: string; lessons: number }>;
   xpVelocity: Array<{ label: string; xp: number }>;
   engagementTimeline: Array<{ label: string; engagement: number }>;
+  nextLessonPlan: {
+    focus: string;
+    actions: string[];
+  };
 };
 
 export default function AnalyticsPage() {
@@ -141,7 +145,23 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>AI Plan for Next Lesson</CardTitle>
+          <CardDescription>Suggested teaching format based on real engagement and attention data.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="rounded-xl border border-border/60 p-3">
+            <p className="font-medium">{query.data.nextLessonPlan.focus}</p>
+          </div>
+          {query.data.nextLessonPlan.actions.map((item) => (
+            <div key={item} className="rounded-xl border border-border/60 p-3 text-muted-foreground">
+              {item}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </section>
   );
 }
-

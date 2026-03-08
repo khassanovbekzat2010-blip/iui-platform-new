@@ -27,6 +27,7 @@ export default function SettingsPage() {
   const hydrated = useAppStore((state) => state.hydrated);
   const user = useAppStore((state) => state.authUser);
   const logout = useAppStore((state) => state.logout);
+  const setLanguage = useAppStore((state) => state.setLanguage);
   const pushToast = useAppStore((state) => state.pushToast);
 
   const [activeSection, setActiveSection] = useState<SettingsSection>("account");
@@ -71,6 +72,7 @@ export default function SettingsPage() {
           goal: data.profile?.goal ?? LEARNING_GOALS[0].id,
           language: data.profile?.language ?? "ru"
         });
+        setLanguage((data.profile?.language as "ru" | "kz" | null) ?? "ru");
         setNotifications({
           dailyReminderEnabled: data.settings?.dailyReminderEnabled ?? true,
           homeworkDeadlineReminderEnabled: data.settings?.homeworkDeadlineReminderEnabled ?? true
@@ -83,7 +85,7 @@ export default function SettingsPage() {
         pushToast("Settings error", error instanceof Error ? error.message : "Failed to load settings");
       }
     })();
-  }, [hydrated, user, pushToast]);
+  }, [hydrated, user, pushToast, setLanguage]);
 
   const filteredSubjects = useMemo(
     () => SUBJECTS.filter((item) => item.toLowerCase().includes(subjectSearch.trim().toLowerCase())),
@@ -112,6 +114,7 @@ export default function SettingsPage() {
           language: profileForm.language
         })
       });
+      setLanguage(profileForm.language as "ru" | "kz");
       pushToast("Saved", "Profile settings updated.");
     } catch (error) {
       pushToast("Save error", error instanceof Error ? error.message : "Failed to save profile");

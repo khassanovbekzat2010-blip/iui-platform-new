@@ -2,8 +2,9 @@ import { HomeworkSubmissionStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { isStudentRole } from "@/lib/auth/rbac";
+import { reviewHomeworkText } from "@/lib/ai/homework-text-review";
 import { requireSession } from "@/lib/auth/require-session";
-import { ensureUserRows } from "@/lib/edu-service";
+import { addXp, ensureUserRows, refreshStreak } from "@/lib/edu-service";
 import { db } from "@/lib/db";
 import { ensureDatabaseReady } from "@/lib/db-init";
 
@@ -43,6 +44,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Access denied for this homework" }, { status: 403 });
     }
 
+    const aiReview = await reviewHomeworkText({
+      homeworkTitle: homework.title,
+      homeworkTopic: homework.topic,
+      homeworkDescription: homework.description,
+      studentAnswer: textAnswer
+    });
+
+    const previousSubmission = await db.homeworkSubmission.findUnique({
+      where: {
+        homeworkId_userId: {
+          homeworkId,
+          userId: user.id
+        }
+      },
+      select: { status: true }
+    });
+
+    const feedbackText =
+      aiReview.status === HomeworkSubmissionStatus.ACCEPTED
+        ? `${aiReview.feedback} Начислено 20 XP.`
+        : `${aiReview.feedback} Правильный ориентир: ${aiReview.idealAnswer}`;
+
     const submission = await db.homeworkSubmission.upsert({
       where: {
         homeworkId_userId: {
@@ -54,23 +77,41 @@ export async function POST(request: Request) {
         homeworkId,
         userId: user.id,
         textAnswer,
-        status: HomeworkSubmissionStatus.SUBMITTED,
+        status: aiReview.status,
         submittedAt: new Date(),
-        aiScore: null,
-        aiReviewedAt: null
+        aiScore: aiReview.score,
+        aiReviewedAt: new Date(),
+        reviewedAt: new Date(),
+        feedback: feedbackText
       },
       update: {
         textAnswer,
-        status: HomeworkSubmissionStatus.SUBMITTED,
+        status: aiReview.status,
         submittedAt: new Date(),
-        aiScore: null,
-        aiReviewedAt: null
+        aiScore: aiReview.score,
+        aiReviewedAt: new Date(),
+        reviewedAt: new Date(),
+        feedback: feedbackText
       }
     });
 
+    if (aiReview.status === HomeworkSubmissionStatus.ACCEPTED && previousSubmission?.status !== HomeworkSubmissionStatus.ACCEPTED) {
+      await addXp(user.id, 20);
+      await refreshStreak(user.id);
+    }
+
     const gamification = await db.gamification.findUnique({ where: { userId: user.id } });
 
-    return NextResponse.json({ ok: true, submission, gamification });
+    return NextResponse.json({
+      ok: true,
+      submission,
+      gamification,
+      review: {
+        status: aiReview.status,
+        score: aiReview.score,
+        feedback: feedbackText
+      }
+    });
   } catch (error) {
     return NextResponse.json({ error: "Failed to submit homework", details: String(error) }, { status: 500 });
   }

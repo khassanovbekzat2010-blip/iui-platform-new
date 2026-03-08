@@ -5,7 +5,7 @@ import { getTeacherStudentIds, isTeacherRole } from "@/lib/auth/rbac";
 import { requireSession } from "@/lib/auth/require-session";
 import { db } from "@/lib/db";
 import { ensureDatabaseReady } from "@/lib/db-init";
-import { addXp } from "@/lib/edu-service";
+import { addXp, refreshStreak } from "@/lib/edu-service";
 
 export async function POST(request: Request) {
   try {
@@ -57,6 +57,7 @@ export async function POST(request: Request) {
 
     if (status === HomeworkSubmissionStatus.ACCEPTED && submission.status !== HomeworkSubmissionStatus.ACCEPTED) {
       await addXp(submission.userId, Math.max(15, submission.homework.points));
+      await refreshStreak(submission.userId);
     }
 
     return NextResponse.json({ ok: true, submission: updated });

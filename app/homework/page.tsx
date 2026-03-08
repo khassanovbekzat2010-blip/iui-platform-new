@@ -64,14 +64,7 @@ type TeacherHomeworkItem = {
   }>;
 };
 
-const tabs: HomeworkSubmissionStatus[] = [
-  "NOT_STARTED",
-  "IN_PROGRESS",
-  "SUBMITTED",
-  "UNDER_REVIEW",
-  "ACCEPTED",
-  "NEEDS_REVISION"
-];
+const tabs: Array<"NOT_STARTED" | "SUBMITTED"> = ["NOT_STARTED", "SUBMITTED"];
 
 export default function HomeworkPage() {
   const hydrated = useAppStore((state) => state.hydrated);
@@ -82,7 +75,7 @@ export default function HomeworkPage() {
   const [loading, setLoading] = useState(true);
   const [errorText, setErrorText] = useState("");
   const [role, setRole] = useState<"teacher" | "student">("student");
-  const [tab, setTab] = useState<HomeworkSubmissionStatus>("NOT_STARTED");
+  const [tab, setTab] = useState<"NOT_STARTED" | "SUBMITTED">("NOT_STARTED");
   const [studentHomework, setStudentHomework] = useState<StudentHomeworkItem[]>([]);
   const [teacherHomework, setTeacherHomework] = useState<TeacherHomeworkItem[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -133,10 +126,15 @@ export default function HomeworkPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, userId]);
 
-  const filteredStudentHomework = useMemo(
-    () => studentHomework.filter((item) => (item.submission?.status ?? "NOT_STARTED") === tab),
-    [studentHomework, tab]
-  );
+  const filteredStudentHomework = useMemo(() => {
+    return studentHomework.filter((item) => {
+      const status = item.submission?.status ?? "NOT_STARTED";
+      if (tab === "NOT_STARTED") {
+        return status === "NOT_STARTED";
+      }
+      return status !== "NOT_STARTED";
+    });
+  }, [studentHomework, tab]);
 
   const submitHomework = async (homeworkId: string) => {
     const textAnswer = (answers[homeworkId] ?? "").trim();
