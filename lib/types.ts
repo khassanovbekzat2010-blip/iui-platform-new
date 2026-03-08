@@ -1,5 +1,5 @@
 export type UserStatus = "online" | "offline" | "break";
-export type AppRole = "teacher" | "student";
+export type AppRole = "teacher" | "student" | "admin";
 export type AppLanguage = "ru" | "en";
 
 export interface NavItem {
@@ -101,6 +101,7 @@ export interface TranscriptLine {
 }
 
 export interface AuthUser {
+  id?: string;
   email: string;
   role: AppRole;
   name: string;

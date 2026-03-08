@@ -38,15 +38,11 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
 
       <div className="flex items-center gap-2 md:gap-3">
         <ThemeToggle />
-        <Button
-          variant="outline"
-          size="sm"
-          className="relative"
-          onClick={() => pushToast("Уведомления", "Новых уведомлений нет")}
-        >
+        <Button variant="outline" size="sm" className="relative" onClick={() => pushToast("Notifications", "No new notifications")}>
           <Bell className="h-4 w-4" />
           <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-rose-500" />
         </Button>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-10 rounded-full px-2">
@@ -56,19 +52,20 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem className="gap-2" onClick={() => router.push("/settings")}>
+            <DropdownMenuItem className="gap-2" onClick={() => router.push(user?.role === "student" ? "/hero" : "/settings")}>
               <User className="h-4 w-4" />
-              Профиль
+              {user?.role === "student" ? "Profile" : "Account"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/settings")}>Настройки</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings")}>Settings</DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => {
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
                 logout();
                 router.push("/login");
               }}
             >
-              Выйти
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -76,3 +73,4 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
     </header>
   );
 }
+

@@ -1,34 +1,87 @@
-"use client";
+import { redirect } from "next/navigation";
 
 import { LiveLessonWorkspace } from "@/components/lesson/live-lesson-workspace";
-import { StudentLessonView } from "@/components/lesson/student-lesson-view";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useAppStore } from "@/store/app-store";
+import { getTeacherStudentIds, isTeacherRole } from "@/lib/auth/rbac";
+import { getSessionUserFromServerCookies } from "@/lib/auth/session";
+import { db } from "@/lib/db";
+import { ensureDatabaseReady } from "@/lib/db-init";
 
-export default function LiveLessonPage() {
-  const hydrated = useAppStore((state) => state.hydrated);
-  const user = useAppStore((state) => state.authUser);
+export default async function LiveLessonPage() {
+  await ensureDatabaseReady();
+  const user = await getSessionUserFromServerCookies();
+  if (!user) {
+    redirect("/login");
+  }
 
-  if (!hydrated || !user) {
-    return (
-      <section className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-72 w-full" />
-      </section>
-    );
+  const archive = await db.lesson.findMany({
+    where: isTeacherRole(user.role)
+      ? { teacherId: user.id }
+      : {
+          participants: {
+            some: { userId: user.id, accessGranted: true }
+          }
+        },
+    select: {
+      id: true,
+      title: true,
+      subject: true,
+      classroomName: true,
+      aiStatus: true,
+      createdAt: true,
+      summary: true,
+      aiError: true,
+      durationSec: true
+    },
+    orderBy: { createdAt: "desc" },
+    take: 20
+  });
+
+  let participants: Array<{ id: string; name: string; email: string; state: "online" | "active" | "offline" }> = [];
+  if (isTeacherRole(user.role)) {
+    const studentIds = await getTeacherStudentIds(user.id);
+    if (studentIds.length) {
+      const [students, devices] = await Promise.all([
+        db.user.findMany({
+          where: { id: { in: studentIds }, role: "student" },
+          select: { id: true, name: true, email: true },
+          orderBy: { name: "asc" },
+          take: 40
+        }),
+        db.device.findMany({
+          where: { studentId: { in: studentIds }, isActive: true },
+          select: { studentId: true, lastSeenAt: true },
+          orderBy: { updatedAt: "desc" }
+        })
+      ]);
+
+      const latestSeenByStudent = new Map<string, Date | null>();
+      for (const device of devices) {
+        if (!latestSeenByStudent.has(device.studentId)) {
+          latestSeenByStudent.set(device.studentId, device.lastSeenAt);
+        }
+      }
+
+      participants = students.map((student) => {
+        const lastSeenAt = latestSeenByStudent.get(student.id);
+        const ageMs = lastSeenAt ? Date.now() - lastSeenAt.getTime() : Number.POSITIVE_INFINITY;
+        return {
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          state: ageMs <= 10_000 ? "active" : ageMs <= 60_000 ? "online" : "offline"
+        };
+      });
+    }
   }
 
   return (
-    <section className="space-y-6">
-      <div>
-        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Live Lesson</h2>
-        <p className="text-muted-foreground">
-          {user.role === "teacher"
-            ? "Живая запись урока, транскрипция и AI-анализ."
-            : "Ваши уроки, рекомендации и домашние задания."}
-        </p>
-      </div>
-      {user.role === "teacher" ? <LiveLessonWorkspace /> : <StudentLessonView studentId={user.studentId ?? "st-02"} />}
-    </section>
+    <LiveLessonWorkspace
+      user={user}
+      archive={archive.map((item) => ({
+        ...item,
+        createdAt: item.createdAt.toISOString()
+      }))}
+      participants={participants}
+    />
   );
 }

@@ -1,10 +1,18 @@
 "use client";
 
 import {
+  BookOpenCheck,
+  CalendarCheck2,
+  Flag,
+  GraduationCap,
   LayoutDashboard,
   LineChart,
+  Map,
   Mic,
   Settings,
+  Shield,
+  ShoppingBag,
+  UserRound,
   Users
 } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +24,14 @@ import { useAppStore } from "@/store/app-store";
 
 const iconMap = {
   "layout-dashboard": LayoutDashboard,
+  flag: Flag,
+  map: Map,
+  shield: Shield,
+  "shopping-bag": ShoppingBag,
+  "graduation-cap": GraduationCap,
+  "user-round": UserRound,
+  "calendar-check-2": CalendarCheck2,
+  "book-open-check": BookOpenCheck,
   mic: Mic,
   users: Users,
   "line-chart": LineChart,
@@ -25,8 +41,9 @@ const iconMap = {
 export function Sidebar() {
   const pathname = usePathname();
   const authUser = useAppStore((state) => state.authUser);
+  const navRole = authUser?.role === "admin" ? "teacher" : authUser?.role;
   const items = navigationItems.filter((item) =>
-    authUser?.role ? (item.roles ? item.roles.includes(authUser.role) : true) : false
+    navRole ? (item.roles ? item.roles.includes(navRole) : true) : false
   );
 
   return (

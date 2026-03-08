@@ -3,7 +3,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { loginAccounts } from "@/data/mock/auth";
 import { defaultLanguage } from "@/data/mock/i18n";
 import { createEngagementPoint } from "@/lib/engagement";
 import { generateLessonAi } from "@/lib/mock-ai";
@@ -34,7 +33,7 @@ interface AppState {
   lesson: LessonState;
   toasts: ToastMessage[];
   setHydrated: () => void;
-  login: (email: string, password: string) => Promise<boolean>;
+  setAuthUser: (user: AuthUser | null) => void;
   logout: () => void;
   setLanguage: (language: AppLanguage) => void;
   updateProfile: (profile: TeacherProfile) => void;
@@ -83,26 +82,7 @@ export const useAppStore = create<AppState>()(
       lesson: initialLessonState,
       toasts: [],
       setHydrated: () => set({ hydrated: true }),
-      login: async (email, password) => {
-        const normalizedEmail = email.trim().toLowerCase();
-        await new Promise((resolve) => setTimeout(resolve, 700));
-        const account = loginAccounts.find((item) => item.email === normalizedEmail && item.password === password.trim());
-        if (!account) {
-          return false;
-        }
-        set((state) => ({
-          authUser: account.user,
-          profile:
-            account.user.role === "teacher"
-              ? state.profile
-              : {
-                  fullName: account.user.name,
-                  email: account.user.email,
-                  subject: "Student"
-                }
-        }));
-        return true;
-      },
+      setAuthUser: (user) => set({ authUser: user }),
       logout: () => set({ authUser: null, lesson: initialLessonState }),
       setLanguage: (language) => set({ language }),
       updateProfile: (profile) => set({ profile }),
@@ -210,7 +190,6 @@ export const useAppStore = create<AppState>()(
       name: "iui-app-state",
       partialize: (state) => ({
         language: state.language,
-        authUser: state.authUser,
         profile: state.profile,
         lesson: {
           ...state.lesson,

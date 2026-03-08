@@ -1,4 +1,104 @@
 
 > iui@1.0.0 dev
-> next dev --port 3012
+> next dev -H 0.0.0.0 -p 3000
 
+   ▲ Next.js 15.5.12
+   - Local:        http://localhost:3000
+   - Network:      http://0.0.0.0:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 6.5s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 697ms (115 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 7.4s (989 modules)
+ GET /login?next=%2F 200 in 9126ms
+ ○ Compiling /api/eeg/latest ...
+ ✓ Compiled /api/eeg/latest in 1955ms (1097 modules)
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 5497ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1467ms (1107 modules)
+ GET / 200 in 4183ms
+ ○ Compiling /api/auth/session ...
+ ✓ Compiled /api/auth/session in 2.9s (1109 modules)
+ GET /api/auth/session 200 in 3659ms
+ GET /login 200 in 3560ms
+ ○ Compiling /api/auth/email/send-code ...
+ ✓ Compiled /api/auth/email/send-code in 1412ms (1162 modules)
+ POST /api/auth/email/send-code 200 in 2686ms
+ ○ Compiling /api/auth/email/verify-code ...
+ ✓ Compiled /api/auth/email/verify-code in 952ms (1164 modules)
+ POST /api/auth/email/verify-code 200 in 1867ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 5.9s (2223 modules)
+ GET /dashboard 200 in 6744ms
+ GET /dashboard 200 in 128ms
+ POST /api/auth/email/verify-code 400 in 593ms
+ ○ Compiling /teacher ...
+ ✓ Compiled /teacher in 3.3s (2236 modules)
+ GET /teacher 200 in 4192ms
+ GET /teacher 200 in 351ms
+ GET /teacher 200 in 192ms
+ ○ Compiling /api/realtime/eeg ...
+ ✓ Compiled /api/realtime/eeg in 3.5s (2244 modules)
+ GET /api/teacher/dashboard 200 in 4026ms
+ ○ Compiling /lesson ...
+ ✓ Compiled /lesson in 3.2s (2272 modules)
+ GET /lesson 200 in 5592ms
+ GET /lesson 200 in 1721ms
+ GET /api/realtime/eeg 200 in 12305ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 612ms
+ ○ Compiling /api/devices ...
+ ✓ Compiled /api/devices in 4.5s (2275 modules)
+ GET /api/devices 200 in 5238ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 5155ms
+ GET /api/realtime/eeg?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 5308ms
+ GET /api/devices 200 in 207ms
+ GET /api/realtime/eeg?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 56ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 247ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 75ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 38ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 41ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 111ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 114ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 145ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 109ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 107ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 138ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 128ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 111ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 110ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 87ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 129ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 58ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 161ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 130ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 108ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 108ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 142ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 112ms
+ POST /api/devices 200 in 228ms
+ GET /api/devices 200 in 88ms
+ GET /api/realtime/eeg?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 45961ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 162ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 138ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 109ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 124ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 132ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 149ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 95ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 70ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 119ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 128ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 119ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 114ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 100ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 110ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 85ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 126ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 73ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 66ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 137ms
+ GET /api/eeg/latest?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 129ms
+ GET /api/realtime/eeg?studentId=cmmg1lvap0003u5zw4znhmlwo 200 in 45187ms

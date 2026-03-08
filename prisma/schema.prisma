@@ -1,0 +1,870 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  student
+  teacher
+  admin
+}
+
+enum TaskType {
+  MULTIPLE_CHOICE
+  SHORT_ANSWER
+}
+
+enum HomeworkSubmissionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  NEEDS_REVISION
+}
+
+enum TaskKind {
+  quiz
+  open
+  drag
+}
+
+enum ProgressStatus {
+  LOCKED
+  UNLOCKED
+  COMPLETED
+}
+
+enum RewardSourceType {
+  TASK
+  QUEST
+  BOSS
+  ACHIEVEMENT
+  SHOP_PURCHASE
+  STREAK
+}
+
+enum ItemRarity {
+  common
+  rare
+  epic
+}
+
+enum ItemType {
+  cosmetic
+  booster
+  utility
+}
+
+enum LessonProcessingStatus {
+  SAVED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum LessonParticipantState {
+  ONLINE
+  ACTIVE
+  OFFLINE
+}
+
+enum RecommendationType {
+  ADAPTIVE_TASK
+  HOMEWORK
+  TEACHER_INSIGHT
+  BRAIN_BREAK
+  EXPLANATION
+}
+
+enum MissionStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+}
+
+enum AssignmentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(student)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  studentProfile     StudentProfile?
+  hero               Hero?
+  attempts           Attempt[]
+  rewardTransactions RewardTransaction[]
+  inventory          InventoryItem[]
+  achievements       UserAchievement[]
+  streak             Streak?
+  enrollments        Enrollment[]
+  questProgress      QuestProgress[]
+  stepProgress       JourneyStepProgress[]
+  bossAttempts       BossAttempt[]
+  taughtLessons      Lesson[]           @relation("TeacherLessons")
+  lessonParticipants LessonParticipant[] @relation("LessonUsers")
+  lessonMaterials    LessonMaterial[]    @relation("LessonMaterialUploader")
+  lessonHighlights   LessonHighlight[]   @relation("LessonHighlightAuthor")
+  deviceTelemetry    DeviceTelemetry[]   @relation("TelemetryStudent")
+  teacherProfile     TeacherProfile?
+  schoolOwned        School[]            @relation("SchoolOwner")
+  studentDevices     Device[]            @relation("StudentDevices")
+  eegReadings        EEGReading[]        @relation("StudentEEG")
+  aiAssignments      Assignment[]        @relation("StudentAssignments")
+  personalizedHomeworks Homework[]       @relation("StudentHomeworkOwner")
+  aiRecommendationsForStudent AIRecommendation[] @relation("AIRecommendationStudent")
+  aiRecommendationsFromTeacher AIRecommendation[] @relation("AIRecommendationTeacher")
+  characterProfile   CharacterProfile?
+  xpTimeline         XPProgress[]
+  missions           Mission[]
+  achievementsV2     Achievement[]
+}
+
+model StudentProfile {
+  id       String  @id @default(cuid())
+  userId   String  @unique
+  classId  String?
+  schoolId String?
+  grade    Int
+  subjects String
+  goals    String
+  heroLevel Int    @default(1)
+  xp       Int     @default(0)
+  streak   Int     @default(0)
+  isActive Boolean @default(true)
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classroom Classroom? @relation(fields: [classId], references: [id], onDelete: SetNull)
+  school    School?   @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+
+  @@index([grade])
+  @@index([classId])
+  @@index([schoolId])
+}
+
+model Hero {
+  id          String @id @default(cuid())
+  userId      String @unique
+  archetype   String
+  level       Int    @default(1)
+  xp          Int    @default(0)
+  focus       Int    @default(10)
+  logic       Int    @default(10)
+  creativity  Int    @default(10)
+  discipline  Int    @default(10)
+  avatarUrl   String
+  coins       Int    @default(0)
+  gems        Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([level, xp])
+}
+
+model Act {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  orderIndex  Int
+  grade       Int
+  subject     String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  steps JourneyStep[]
+
+  @@unique([grade, subject, orderIndex])
+  @@index([isActive, grade, subject])
+}
+
+model JourneyStep {
+  id             String   @id @default(cuid())
+  actId          String
+  orderIndex     Int
+  code           String
+  title          String
+  description    String
+  rewardXp       Int      @default(0)
+  rewardCoins    Int      @default(0)
+  isBoss         Boolean  @default(false)
+  isLockedByDefault Boolean @default(true)
+  createdAt      DateTime @default(now())
+
+  act          Act                 @relation(fields: [actId], references: [id], onDelete: Cascade)
+  quests       Quest[]
+  bossBattle   BossBattle?
+  stepProgress JourneyStepProgress[]
+
+  @@unique([actId, orderIndex])
+  @@index([actId, isBoss])
+}
+
+model Quest {
+  id          String   @id @default(cuid())
+  stepId      String
+  title       String
+  description String
+  difficulty  String
+  isMain      Boolean  @default(false)
+  baseXp      Int      @default(20)
+  baseCoins   Int      @default(10)
+  unlockOrder Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  step          JourneyStep    @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  tasks         Task[]
+  attempts      Attempt[]
+  questProgress QuestProgress[]
+
+  @@index([stepId, unlockOrder])
+}
+
+model Task {
+  id            String   @id @default(cuid())
+  questId       String
+  type          TaskKind
+  question      String
+  options       String?
+  correctAnswer String
+  explanation   String
+  topic         String
+  difficulty    String
+  orderIndex    Int
+  createdAt     DateTime @default(now())
+
+  quest    Quest     @relation(fields: [questId], references: [id], onDelete: Cascade)
+  attempts Attempt[]
+
+  @@index([questId, orderIndex])
+}
+
+model Attempt {
+  id          String   @id @default(cuid())
+  userId      String
+  taskId      String
+  questId     String?
+  answer      String
+  isCorrect   Boolean
+  timeSpentMs Int
+  suspicious  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task  Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  quest Quest? @relation(fields: [questId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([questId, userId])
+}
+
+model QuestProgress {
+  id          String         @id @default(cuid())
+  userId      String
+  questId     String
+  status      ProgressStatus @default(LOCKED)
+  completedAt DateTime?
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questId])
+  @@index([userId, status])
+}
+
+model JourneyStepProgress {
+  id          String         @id @default(cuid())
+  userId      String
+  stepId      String
+  status      ProgressStatus @default(LOCKED)
+  unlockedAt  DateTime?
+  completedAt DateTime?
+
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  step JourneyStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stepId])
+  @@index([userId, status])
+}
+
+model BossBattle {
+  id           String @id @default(cuid())
+  stepId        String @unique
+  title         String
+  timeLimitSec  Int
+  maxAttempts   Int    @default(3)
+  passScore     Int
+  rewardChest   ItemRarity @default(common)
+
+  step     JourneyStep   @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  attempts BossAttempt[]
+}
+
+model BossAttempt {
+  id           String   @id @default(cuid())
+  bossId        String
+  userId        String
+  score         Int
+  passed        Boolean
+  timeSpentMs   Int
+  attemptNo     Int
+  rewardGranted Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  boss BossBattle @relation(fields: [bossId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([bossId, userId, createdAt])
+}
+
+model RewardTransaction {
+  id               String           @id @default(cuid())
+  userId           String
+  sourceType       RewardSourceType
+  sourceId         String?
+  xp               Int              @default(0)
+  coins            Int              @default(0)
+  gems             Int              @default(0)
+  itemDefinitionId String?
+  metadata         String?
+  createdAt        DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemDefinition ItemDefinition? @relation(fields: [itemDefinitionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([sourceType, sourceId])
+}
+
+model ItemDefinition {
+  id              String     @id @default(cuid())
+  name            String
+  slug            String     @unique
+  rarity          ItemRarity
+  type            ItemType
+  priceCoins      Int        @default(0)
+  priceGems       Int        @default(0)
+  effects         String?
+  cooldownSeconds Int?
+  isStreakFreeze  Boolean    @default(false)
+
+  inventory          InventoryItem[]
+  rewardTransactions RewardTransaction[]
+}
+
+model InventoryItem {
+  id               String   @id @default(cuid())
+  userId           String
+  itemDefinitionId String
+  quantity         Int      @default(1)
+  acquiredAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemDefinition ItemDefinition @relation(fields: [itemDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemDefinitionId])
+  @@index([userId])
+}
+
+model AchievementDefinition {
+  id          String @id @default(cuid())
+  code        String @unique
+  title       String
+  description String
+  xpReward    Int    @default(0)
+  coinsReward Int    @default(0)
+  gemsReward  Int    @default(0)
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id                      String   @id @default(cuid())
+  userId                  String
+  achievementDefinitionId String
+  unlockedAt              DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementDefinition AchievementDefinition @relation(fields: [achievementDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementDefinitionId])
+  @@index([userId, unlockedAt])
+}
+
+model Streak {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  current        Int      @default(0)
+  best           Int      @default(0)
+  lastActiveDate DateTime?
+  freezeCount    Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Classroom {
+  id        String   @id @default(cuid())
+  name      String
+  grade     Int
+  teacherId String
+  schoolId  String?
+  createdAt DateTime @default(now())
+
+  school        School?          @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  enrollments   Enrollment[]
+  sessions      LessonSession[]
+  studentProfiles StudentProfile[]
+
+  @@index([teacherId, grade])
+  @@index([schoolId])
+}
+
+model Enrollment {
+  id          String   @id @default(cuid())
+  classroomId String
+  studentId   String
+  createdAt   DateTime @default(now())
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classroomId, studentId])
+  @@index([studentId])
+}
+
+model EmailOtpCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  role      UserRole
+  name      String?
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email, consumed, expiresAt])
+  @@index([email, createdAt])
+}
+
+model Lesson {
+  id            String               @id @default(cuid())
+  teacherId     String
+  title         String
+  subject       String
+  topic         String?
+  classroomName String?
+  aiStatus      LessonProcessingStatus @default(SAVED)
+  startedAt     DateTime?
+  endedAt       DateTime?
+  durationSec   Int                  @default(0)
+  notes         String?
+  transcript    String?
+  summary       String?
+  aiError       String?
+  s3Bucket      String?
+  s3Region      String?
+  recordingKey  String?
+  transcriptKey String?
+  summaryKey    String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  teacher      User               @relation("TeacherLessons", fields: [teacherId], references: [id], onDelete: Cascade)
+  participants LessonParticipant[]
+  materials    LessonMaterial[]
+  highlights   LessonHighlight[]
+  homeworks    Homework[]
+  sessions     LessonSession[]
+  assignments  Assignment[]
+
+  @@index([teacherId, createdAt])
+}
+
+model LessonParticipant {
+  id            String                @id @default(cuid())
+  lessonId      String
+  userId        String
+  role          UserRole
+  state         LessonParticipantState @default(ONLINE)
+  joinedAt      DateTime?
+  leftAt        DateTime?
+  accessGranted Boolean               @default(false)
+  createdAt     DateTime              @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user   User   @relation("LessonUsers", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, userId])
+  @@index([userId, createdAt])
+}
+
+model LessonMaterial {
+  id            String   @id @default(cuid())
+  lessonId      String
+  uploadedById  String
+  title         String
+  mimeType      String?
+  sizeBytes     Int?
+  storageBucket String?
+  storageKey    String?
+  publicUrl     String?
+  createdAt     DateTime @default(now())
+
+  lesson     Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  uploadedBy User   @relation("LessonMaterialUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([lessonId, createdAt])
+}
+
+model LessonHighlight {
+  id        String   @id @default(cuid())
+  lessonId  String
+  authorId  String
+  labelTime String?
+  text      String
+  createdAt DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  author User   @relation("LessonHighlightAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId, createdAt])
+}
+
+model DeviceTelemetry {
+  id              String   @id @default(cuid())
+  studentId       String
+  deviceName      String
+  deviceType      String
+  connectionState String
+  focus           Int?
+  signal          Int?
+  payload         String?
+  recordedAt      DateTime @default(now())
+
+  student User @relation("TelemetryStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, recordedAt])
+}
+
+model School {
+  id         String   @id @default(cuid())
+  name       String
+  city       String?
+  timezone   String?
+  ownerId    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  owner    User?            @relation("SchoolOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  teachers TeacherProfile[]
+  students StudentProfile[]
+  classes  Classroom[]
+
+  @@index([ownerId])
+}
+
+model TeacherProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  schoolId        String?
+  specialization  String?
+  yearsExperience Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+}
+
+model Device {
+  id         String   @id
+  studentId  String
+  apiKeyHash String
+  deviceName String
+  isActive   Boolean  @default(true)
+  lastSeenAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  student    User         @relation("StudentDevices", fields: [studentId], references: [id], onDelete: Cascade)
+  eegReadings EEGReading[]
+
+  @@index([studentId, isActive])
+}
+
+model LessonSession {
+  id        String   @id @default(cuid())
+  lessonId  String
+  classId   String
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  status    String   @default("LIVE")
+  createdAt DateTime @default(now())
+
+  lesson            Lesson              @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  classroom         Classroom           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  eegReadings       EEGReading[]
+  aiRecommendations AIRecommendation[]
+  assignments       Assignment[]
+
+  @@index([lessonId, startedAt])
+  @@index([classId, startedAt])
+}
+
+model EEGReading {
+  id              String   @id @default(cuid())
+  studentId       String
+  lessonSessionId String?
+  deviceId        String?
+  attention       Int
+  meditation      Int
+  signal          Int
+  raw             Int
+  engagementScore Int
+  state           String
+  timestamp       DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  student      User          @relation("StudentEEG", fields: [studentId], references: [id], onDelete: Cascade)
+  lessonSession LessonSession? @relation(fields: [lessonSessionId], references: [id], onDelete: SetNull)
+  device       Device?       @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, timestamp])
+  @@index([lessonSessionId, timestamp])
+  @@index([deviceId, timestamp])
+}
+
+model Assignment {
+  id              String           @id @default(cuid())
+  studentId       String
+  lessonId        String?
+  lessonSessionId String?
+  title           String
+  description     String
+  difficulty      String
+  generatedByAI   Boolean          @default(false)
+  type            String
+  status          AssignmentStatus @default(PENDING)
+  reason          String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  student      User          @relation("StudentAssignments", fields: [studentId], references: [id], onDelete: Cascade)
+  lesson       Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  lessonSession LessonSession? @relation(fields: [lessonSessionId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, createdAt])
+  @@index([lessonId, createdAt])
+  @@index([lessonSessionId, createdAt])
+}
+
+model AIRecommendation {
+  id               String             @id @default(cuid())
+  studentId        String
+  teacherId        String?
+  lessonSessionId  String?
+  recommendationType RecommendationType
+  content          String
+  payload          String?
+  createdAt        DateTime           @default(now())
+
+  student      User           @relation("AIRecommendationStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher      User?          @relation("AIRecommendationTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  lessonSession LessonSession? @relation(fields: [lessonSessionId], references: [id], onDelete: SetNull)
+  homeworks    Homework[]
+
+  @@index([studentId, createdAt])
+  @@index([teacherId, createdAt])
+  @@index([lessonSessionId, createdAt])
+}
+
+model CharacterProfile {
+  id        String   @id @default(cuid())
+  studentId String   @unique
+  avatar    String
+  level     Int      @default(1)
+  xp        Int      @default(0)
+  skills    String
+  rewards   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model XPProgress {
+  id        String   @id @default(cuid())
+  studentId String
+  xp        Int
+  level     Int
+  source    String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, createdAt])
+}
+
+model Mission {
+  id          String        @id @default(cuid())
+  studentId   String
+  title       String
+  description String
+  status      MissionStatus @default(ACTIVE)
+  rewardXp    Int           @default(20)
+  dueAt       DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, status])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  studentId   String
+  code        String
+  title       String
+  description String
+  unlockedAt  DateTime @default(now())
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, code])
+  @@index([studentId, unlockedAt])
+}
+
+// Legacy models (kept for backward compatibility with existing pages)
+model Profile {
+  userId     String    @id
+  role       UserRole  @default(student)
+  grade      Int?
+  subjects   String?
+  goal       String?
+  language   String?   @default("ru")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  gamification Gamification?
+  settings     Settings?
+  completions  DailyCompletion[]
+  submissions  HomeworkSubmission[]
+}
+
+model Gamification {
+  userId            String   @id
+  avatarId          String   @default("avatar-01")
+  level             Int      @default(1)
+  xp                Int      @default(0)
+  streakDays        Int      @default(0)
+  lastActivityDate  DateTime?
+  coins             Int      @default(0)
+  showCharacter     Boolean  @default(true)
+  enableStreak      Boolean  @default(true)
+
+  profile Profile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model DailyTask {
+  id            String   @id @default(cuid())
+  subject       String
+  grade         Int
+  topic         String
+  difficulty    String
+  type          TaskType
+  question      String
+  options       String?
+  correctAnswer String
+  explanation   String
+  createdAt     DateTime @default(now())
+
+  completions DailyCompletion[]
+}
+
+model DailyCompletion {
+  id          String   @id @default(cuid())
+  userId      String
+  dailyTaskId String
+  date        DateTime
+  isCorrect   Boolean
+  answer      String
+  createdAt   DateTime @default(now())
+
+  profile Profile  @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  task    DailyTask @relation(fields: [dailyTaskId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+model Homework {
+  id               String   @id @default(cuid())
+  createdBy        String
+  studentId        String?
+  lessonId         String?
+  recommendationId String?
+  title            String
+  subject          String
+  grade            Int
+  topic            String
+  description      String
+  content          String?
+  generatedByAI    Boolean  @default(false)
+  difficulty       String?
+  dueDate          DateTime
+  points           Int      @default(10)
+  createdAt        DateTime @default(now())
+
+  submissions HomeworkSubmission[]
+  lesson      Lesson?              @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  student     User?                @relation("StudentHomeworkOwner", fields: [studentId], references: [id], onDelete: SetNull)
+  recommendation AIRecommendation? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
+
+  @@index([grade, subject])
+  @@index([studentId, dueDate])
+  @@index([lessonId])
+}
+
+model HomeworkSubmission {
+  id          String                   @id @default(cuid())
+  homeworkId  String
+  userId      String
+  status      HomeworkSubmissionStatus @default(NOT_STARTED)
+  textAnswer  String?
+  photoDataUrl String?
+  feedback    String?
+  aiScore     Int?
+  aiReviewedAt DateTime?
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  profile  Profile  @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([homeworkId, userId])
+  @@index([userId, status])
+}
+
+model Settings {
+  userId                          String  @id
+  dailyReminderEnabled            Boolean @default(true)
+  homeworkDeadlineReminderEnabled Boolean @default(true)
+
+  profile Profile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}

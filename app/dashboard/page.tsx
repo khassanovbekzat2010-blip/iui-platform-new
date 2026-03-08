@@ -1,144 +1,335 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { Activity, Brain, Flame, Sparkles, Swords, Trophy } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { EngagementLineChart } from "@/components/charts/engagement-line-chart";
-import { EngagementMeter } from "@/components/dashboard/engagement-meter";
-import { QuickActions } from "@/components/dashboard/quick-actions";
-import { StatCard } from "@/components/dashboard/stat-card";
-import { TodayLessons } from "@/components/dashboard/today-lessons";
-import { StudentGamificationCard } from "@/components/students/student-gamification-card";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { dashboardStats, quickActions, todayLessons } from "@/data/mock/dashboard";
-import { students, studentAiRecommendationsById, studentHomeworkById, studentLessonsById, studentTrendById } from "@/data/mock/students";
+import { apiRequest } from "@/lib/api";
 import { useAppStore } from "@/store/app-store";
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const hydrated = useAppStore((state) => state.hydrated);
-  const user = useAppStore((state) => state.authUser);
-  const lesson = useAppStore((state) => state.lesson);
-  const pushToast = useAppStore((state) => state.pushToast);
+type StudentDashboardDTO = {
+  student: { id: string; name: string; email: string; grade: number | null };
+  hero: { avatar: string; level: number; xp: number; streak: number };
+  eeg: {
+    latest: {
+      id: string;
+      attention: number;
+      meditation: number;
+      signal: number;
+      raw: number;
+      engagementScore: number;
+      state: string;
+      timestamp: string;
+    } | null;
+    summary: {
+      avgAttention: number;
+      avgMeditation: number;
+      avgSignal: number;
+      avgEngagement: number;
+    };
+    history: Array<{
+      id: string;
+      attention: number;
+      meditation: number;
+      signal: number;
+      raw: number;
+      engagementScore: number;
+      state: string;
+      timestamp: string;
+    }>;
+    adaptiveHint: string;
+  };
+  assignments: Array<{
+    id: string;
+    title: string;
+    description: string;
+    difficulty: string;
+    type: string;
+    status: string;
+    reason: string | null;
+    createdAt: string;
+  }>;
+  homeworks: Array<{
+    id: string;
+    title: string;
+    subject: string;
+    topic: string;
+    difficulty: string | null;
+    dueDate: string;
+    generatedByAI: boolean;
+  }>;
+  recommendations: Array<{
+    id: string;
+    recommendationType: string;
+    content: string;
+    createdAt: string;
+  }>;
+  missions: Array<{
+    id: string;
+    title: string;
+    status: string;
+    rewardXp: number;
+    dueAt: string | null;
+  }>;
+  achievements: Array<{
+    id: string;
+    title: string;
+    code: string;
+    unlockedAt: string;
+  }>;
+};
 
-  if (!hydrated || !user) {
+type LiveReading = StudentDashboardDTO["eeg"]["latest"];
+
+export default function DashboardPage() {
+  const user = useAppStore((state) => state.authUser);
+  const [liveReading, setLiveReading] = useState<LiveReading>(null);
+
+  const studentQuery = useQuery({
+    queryKey: ["student-dashboard"],
+    enabled: user?.role === "student",
+    queryFn: () => apiRequest<StudentDashboardDTO>("/api/student/dashboard")
+  });
+
+  useEffect(() => {
+    if (studentQuery.data?.eeg.latest) {
+      setLiveReading(studentQuery.data.eeg.latest);
+    }
+  }, [studentQuery.data?.eeg.latest]);
+
+  useEffect(() => {
+    if (user?.role !== "student") return;
+    const eventSource = new EventSource("/api/realtime/eeg");
+
+    eventSource.addEventListener("snapshot", (event) => {
+      const rows = JSON.parse((event as MessageEvent).data) as Array<{
+        studentId: string;
+        attention: number;
+        meditation: number;
+        signal: number;
+        raw: number;
+        engagementScore: number;
+        state: string;
+        timestamp: string;
+        readingId: string;
+      }>;
+      const first = rows[0];
+      if (!first) return;
+      setLiveReading({
+        id: first.readingId,
+        attention: first.attention,
+        meditation: first.meditation,
+        signal: first.signal,
+        raw: first.raw,
+        engagementScore: first.engagementScore,
+        state: first.state,
+        timestamp: first.timestamp
+      });
+    });
+
+    eventSource.addEventListener("eeg", (event) => {
+      const reading = JSON.parse((event as MessageEvent).data) as {
+        readingId: string;
+        attention: number;
+        meditation: number;
+        signal: number;
+        raw: number;
+        engagementScore: number;
+        state: string;
+        timestamp: string;
+      };
+      setLiveReading({
+        id: reading.readingId,
+        attention: reading.attention,
+        meditation: reading.meditation,
+        signal: reading.signal,
+        raw: reading.raw,
+        engagementScore: reading.engagementScore,
+        state: reading.state,
+        timestamp: reading.timestamp
+      });
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, [user?.role]);
+
+  const chartData = (studentQuery.data?.eeg.history ?? []).map((row) => ({
+    label: row.timestamp.slice(11, 19),
+    value: row.attention
+  }));
+
+  if (user?.role === "teacher" || user?.role === "admin") {
     return (
       <section className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4 md:grid-cols-3">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
+        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Teacher Workspace</h2>
+        <p className="text-muted-foreground">Open the classroom control panel for live EEG and AI analytics.</p>
+        <Link href="/teacher">
+          <Button>Open Teacher Dashboard</Button>
+        </Link>
       </section>
     );
   }
 
-  if (user.role === "student" && user.studentId) {
-    const student = students.find((item) => item.id === user.studentId);
-    const trend = studentTrendById[user.studentId] ?? [];
-    const lessons = studentLessonsById[user.studentId] ?? [];
-    const recommendations = studentAiRecommendationsById[user.studentId] ?? [];
-    const homework = studentHomeworkById[user.studentId] ?? [];
-
+  if (studentQuery.isLoading) {
     return (
-      <section className="space-y-6">
-        <div>
-          <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">Личный кабинет ученика: прогресс, уроки и рекомендации.</p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatCard stat={{ id: "me-1", title: "Ученик", value: student?.name ?? "-", delta: "Ваш профиль", trend: "neutral" }} />
-          <StatCard stat={{ id: "me-2", title: "Вовлеченность", value: `${lesson.engagement}%`, delta: "В реальном времени", trend: "up" }} />
-          <StatCard stat={{ id: "me-3", title: "Домашние задания", value: `${homework.length}`, delta: "Активные задачи", trend: "neutral" }} />
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Моя вовлеченность</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EngagementLineChart data={trend} xKey="label" yKey="value" />
-          </CardContent>
-        </Card>
-
-        <StudentGamificationCard trend={trend} homework={homework} />
-
-        <div className="grid gap-4 xl:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Мои уроки</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {lessons.map((item) => (
-                <div key={item.id} className="rounded-xl border border-border/60 p-3">
-                  <p className="font-medium">{item.lesson}</p>
-                  <p className="text-sm text-muted-foreground">{item.date}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>AI рекомендации</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {recommendations.map((item) => (
-                <p key={item} className="rounded-xl border border-border/60 p-3 text-sm text-muted-foreground">
-                  {item}
-                </p>
-              ))}
-            </CardContent>
-          </Card>
+      <section className="space-y-4">
+        <Skeleton className="h-8 w-56" />
+        <div className="grid gap-4 md:grid-cols-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
         </div>
       </section>
     );
   }
+
+  if (studentQuery.isError || !studentQuery.data) {
+    return <p className="text-sm text-muted-foreground">Student dashboard is unavailable right now.</p>;
+  }
+
+  const data = studentQuery.data;
 
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Dashboard</h2>
-        <p className="text-muted-foreground">Обзор активности классов и живой вовлеченности.</p>
+        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Student Neuro Dashboard</h2>
+        <p className="text-muted-foreground">
+          Live EEG attention stream, AI tasks, hero journey progression, and adaptive lesson actions.
+        </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {dashboardStats.map((stat) => (
-          <StatCard key={stat.id} stat={stat} />
-        ))}
+      <div className="grid gap-4 xl:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2"><Activity className="h-4 w-4" />Attention</CardDescription>
+            <CardTitle>{liveReading?.attention ?? data.eeg.summary.avgAttention}%</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">State: {liveReading?.state ?? "No signal"}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2"><Brain className="h-4 w-4" />Meditation</CardDescription>
+            <CardTitle>{liveReading?.meditation ?? data.eeg.summary.avgMeditation}%</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">Signal: {liveReading?.signal ?? data.eeg.summary.avgSignal}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2"><Swords className="h-4 w-4" />Hero Journey</CardDescription>
+            <CardTitle>Lvl {data.hero.level}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>XP: {data.hero.xp}</p>
+            <Progress value={(data.hero.xp % 120) / 1.2} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2"><Flame className="h-4 w-4" />Streak</CardDescription>
+            <CardTitle>{data.hero.streak} days</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">Engagement avg: {data.eeg.summary.avgEngagement}%</CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Live Attention Timeline</CardTitle>
+          <CardDescription>Realtime history from EEG sensor stream.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EngagementLineChart data={chartData} xKey="label" yKey="value" />
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4" />AI Personal Tasks</CardTitle>
+            <CardDescription>Generated from EEG, errors, pace and lesson context.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.assignments.map((task) => (
+              <div key={task.id} className="rounded-xl border border-border/60 p-3">
+                <p className="font-medium">{task.title}</p>
+                <p className="text-sm text-muted-foreground">{task.description}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {task.type} | {task.difficulty} | {task.status}
+                </p>
+                {task.reason ? <p className="mt-2 text-xs text-primary">{task.reason}</p> : null}
+              </div>
+            ))}
+            {!data.assignments.length ? <p className="text-sm text-muted-foreground">No generated assignments yet.</p> : null}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Adaptive Hint</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <p>{data.eeg.adaptiveHint}</p>
+            <Link href="/lesson">
+              <Button variant="outline" className="w-full">Open Live Lesson</Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <EngagementMeter
-            percent={lesson.engagement}
-            stateLabel={lesson.engagement >= 75 ? "Focused" : "Needs attention"}
-            dropMoments={lesson.dropMoments}
-          />
-        </div>
-        <QuickActions
-          actions={quickActions}
-          onActionClick={(actionId) => {
-            if (actionId === "homework") {
-              router.push("/lesson");
-            } else if (actionId === "report") {
-              router.push("/analytics");
-            } else {
-              router.push("/students");
-            }
-          }}
-          onAssistantClick={() => pushToast("AI Ассистент", "Функция готова к подключению API")}
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Personal Homework</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.homeworks.map((item) => (
+              <div key={item.id} className="rounded-xl border border-border/60 p-3 text-sm">
+                <p className="font-medium">{item.title}</p>
+                <p className="text-muted-foreground">{item.subject}: {item.topic}</p>
+                <p className="text-xs text-muted-foreground">Difficulty: {item.difficulty ?? "adaptive"}</p>
+                <p className="text-xs text-muted-foreground">Due: {item.dueDate.slice(0, 10)}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Daily Challenges</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.missions.map((mission) => (
+              <div key={mission.id} className="rounded-xl border border-border/60 p-3 text-sm">
+                <p className="font-medium">{mission.title}</p>
+                <p className="text-muted-foreground">{mission.status}</p>
+                <p className="text-xs text-muted-foreground">Reward: {mission.rewardXp} XP</p>
+              </div>
+            ))}
+            {!data.missions.length ? <p className="text-sm text-muted-foreground">No active missions.</p> : null}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4" />Achievements</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.achievements.map((achievement) => (
+              <div key={achievement.id} className="rounded-xl border border-border/60 p-3 text-sm">
+                <p className="font-medium">{achievement.title}</p>
+                <p className="text-xs text-muted-foreground">{achievement.code}</p>
+              </div>
+            ))}
+            {!data.achievements.length ? <p className="text-sm text-muted-foreground">First achievement is waiting.</p> : null}
+          </CardContent>
+        </Card>
       </div>
-
-      <TodayLessons
-        lessons={todayLessons}
-        onLessonClick={() => {
-          router.push("/lesson");
-          pushToast("Переход к уроку", "Открыт модуль Live Lesson");
-        }}
-      />
     </section>
   );
 }

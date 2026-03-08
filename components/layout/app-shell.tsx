@@ -24,9 +24,10 @@ export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const hydrated = useAppStore((state) => state.hydrated);
   const user = useAppStore((state) => state.authUser);
+  const navRole = user?.role === "admin" ? "teacher" : user?.role;
 
   const visibleItems = navigationItems.filter((item) =>
-    user?.role ? (item.roles ? item.roles.includes(user.role) : true) : false
+    navRole ? (item.roles ? item.roles.includes(navRole) : true) : false
   );
 
   useEffect(() => {
@@ -42,11 +43,7 @@ export function AppShell({ children }: AppShellProps) {
       return;
     }
     if (user && !canAccessPath(user.role, pathname, user.studentId)) {
-      if (user.role === "student" && user.studentId) {
-        router.replace(`/students/${user.studentId}`);
-      } else {
-        router.replace("/dashboard");
-      }
+      router.replace("/dashboard");
     }
   }, [hydrated, pathname, router, user]);
 
