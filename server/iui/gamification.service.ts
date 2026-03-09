@@ -176,3 +176,114 @@ export async function grantFocusXp(input: {
     return { xp: nextXp, level: nextLevel };
   });
 }
+
+export async function grantHeroCoins(input: {
+  studentId: string;
+  coins: number;
+}) {
+  if (input.coins <= 0) {
+    return null;
+  }
+
+  await ensureStudentGamificationState(input.studentId);
+
+  return db.hero.update({
+    where: { userId: input.studentId },
+    data: {
+      coins: { increment: input.coins }
+    }
+  });
+}
+
+export async function upgradeHeroTrait(input: {
+  studentId: string;
+  trait: "focus" | "logic" | "creativity" | "discipline";
+  cost: number;
+  increment: number;
+}) {
+  await ensureStudentGamificationState(input.studentId);
+
+  return db.$transaction(async (tx) => {
+    const [hero, character] = await Promise.all([
+      tx.hero.findUnique({
+        where: { userId: input.studentId }
+      }),
+      tx.characterProfile.findUnique({
+        where: { studentId: input.studentId }
+      })
+    ]);
+
+    if (!hero) {
+      throw new Error("Герой не найден");
+    }
+
+    if (hero.coins < input.cost) {
+      throw new Error("Недостаточно coins для улучшения");
+    }
+
+    const updated = await tx.hero.update({
+      where: { userId: input.studentId },
+      data: {
+        coins: { decrement: input.cost },
+        [input.trait]: { increment: input.increment }
+      }
+    });
+
+    const currentSkills = character?.skills ? JSON.parse(character.skills) : [];
+    const currentRewards = character?.rewards ? JSON.parse(character.rewards) : [];
+    const rewardCode = `upgrade-${input.trait}-${updated[input.trait]}`;
+
+    await tx.characterProfile.upsert({
+      where: { studentId: input.studentId },
+      create: {
+        studentId: input.studentId,
+        avatar: "hero-neural-scout",
+        level: updated.level,
+        xp: updated.xp,
+        skills: JSON.stringify([input.trait]),
+        rewards: JSON.stringify([rewardCode])
+      },
+      update: {
+        level: updated.level,
+        xp: updated.xp,
+        skills: JSON.stringify(
+          Array.from(new Set([...(Array.isArray(currentSkills) ? currentSkills : []), input.trait]))
+        ),
+        rewards: JSON.stringify(Array.from(new Set([...(Array.isArray(currentRewards) ? currentRewards : []), rewardCode])))
+      }
+    });
+
+    return updated;
+  });
+}
+
+export async function completeMissionByTitle(studentId: string, phrase: string) {
+  const mission = await db.mission.findFirst({
+    where: {
+      studentId,
+      status: "ACTIVE",
+      title: {
+        contains: phrase
+      }
+    },
+    orderBy: { createdAt: "asc" }
+  });
+
+  if (!mission) {
+    return null;
+  }
+
+  await grantFocusXp({
+    studentId,
+    xp: mission.rewardXp,
+    source: "MISSION_COMPLETED",
+    reason: mission.title
+  });
+
+  return db.mission.update({
+    where: { id: mission.id },
+    data: {
+      status: "COMPLETED"
+    }
+  });
+}

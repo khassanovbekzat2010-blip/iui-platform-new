@@ -4,9 +4,9 @@ export const defaultLanguage: AppLanguage = "ru";
 
 export const dictionary = {
   ru: {
-    appTagline: "AI образовательная платформа",
+    appTagline: "Нейро-AI платформа для обучения",
     loginTitle: "Вход в IUI",
-    loginHint: "Используйте код подтверждения",
+    loginHint: "Используйте локальный пароль IUI или резервный код",
     email: "Email",
     password: "Пароль",
     signIn: "Войти",
@@ -15,13 +15,13 @@ export const dictionary = {
     settingsSaved: "Настройки сохранены",
     recordingStarted: "Запись началась",
     recordingStopped: "Запись завершена",
-    aiDone: "AI анализ готов",
-    noPermission: "Нет доступа к разделу"
+    aiDone: "AI-анализ завершен",
+    noPermission: "Нет доступа к этому разделу"
   },
   kz: {
-    appTagline: "AI білім беру платформасы",
+    appTagline: "Оқытуға арналған нейро-AI платформа",
     loginTitle: "IUI жүйесіне кіру",
-    loginHint: "Растау кодын пайдаланыңыз",
+    loginHint: "IUI құпиясөзін немесе резервтік кодты пайдаланыңыз",
     email: "Email",
     password: "Құпиясөз",
     signIn: "Кіру",

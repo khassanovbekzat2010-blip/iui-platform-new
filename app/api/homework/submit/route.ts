@@ -7,6 +7,7 @@ import { requireSession } from "@/lib/auth/require-session";
 import { addXp, ensureUserRows, refreshStreak } from "@/lib/edu-service";
 import { db } from "@/lib/db";
 import { ensureDatabaseReady } from "@/lib/db-init";
+import { completeMissionByTitle, grantHeroCoins } from "@/server/iui/gamification.service";
 
 export async function POST(request: Request) {
   try {
@@ -98,6 +99,8 @@ export async function POST(request: Request) {
     if (aiReview.status === HomeworkSubmissionStatus.ACCEPTED && previousSubmission?.status !== HomeworkSubmissionStatus.ACCEPTED) {
       await addXp(user.id, 20);
       await refreshStreak(user.id);
+      await grantHeroCoins({ studentId: user.id, coins: 12 });
+      await completeMissionByTitle(user.id, "Homework");
     }
 
     const gamification = await db.gamification.findUnique({ where: { userId: user.id } });

@@ -10,7 +10,7 @@ import { ensureUserRows } from "@/lib/edu-service";
 import { processLessonAi } from "@/lib/lesson-ai";
 import { buildStorageObject } from "@/lib/storage";
 import { TranscriptLine } from "@/lib/types";
-import { grantFocusXp } from "@/server/iui/gamification.service";
+import { completeMissionByTitle, grantFocusXp } from "@/server/iui/gamification.service";
 
 const transcriptLineSchema = z.object({
   speaker: z.string().min(1),
@@ -222,6 +222,7 @@ export async function POST(request: Request) {
             source: "LESSON_COMPLETED",
             reason: `Completed lesson: ${parsed.title}`
           });
+          await completeMissionByTitle(studentId, "Lesson");
 
           await db.assignment.create({
             data: {

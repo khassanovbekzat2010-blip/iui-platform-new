@@ -8,6 +8,7 @@ import { reviewHomeworkFromPhoto } from "@/lib/ai/homework-photo-review";
 import { db } from "@/lib/db";
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { addXp, ensureUserRows, refreshStreak } from "@/lib/edu-service";
+import { completeMissionByTitle, grantHeroCoins } from "@/server/iui/gamification.service";
 
 const schema = z.object({
   homeworkId: z.string().min(2),
@@ -111,6 +112,8 @@ export async function POST(request: Request) {
     if (aiResult.status === HomeworkSubmissionStatus.ACCEPTED && previousSubmission?.status !== HomeworkSubmissionStatus.ACCEPTED) {
       await addXp(user.id, 25);
       await refreshStreak(user.id);
+      await grantHeroCoins({ studentId: user.id, coins: 14 });
+      await completeMissionByTitle(user.id, "Homework");
     }
 
     return NextResponse.json({

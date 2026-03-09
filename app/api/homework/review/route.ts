@@ -6,6 +6,7 @@ import { requireSession } from "@/lib/auth/require-session";
 import { db } from "@/lib/db";
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { addXp, refreshStreak } from "@/lib/edu-service";
+import { completeMissionByTitle, grantHeroCoins } from "@/server/iui/gamification.service";
 
 export async function POST(request: Request) {
   try {
@@ -58,6 +59,8 @@ export async function POST(request: Request) {
     if (status === HomeworkSubmissionStatus.ACCEPTED && submission.status !== HomeworkSubmissionStatus.ACCEPTED) {
       await addXp(submission.userId, Math.max(15, submission.homework.points));
       await refreshStreak(submission.userId);
+      await grantHeroCoins({ studentId: submission.userId, coins: 10 });
+      await completeMissionByTitle(submission.userId, "Homework");
     }
 
     return NextResponse.json({ ok: true, submission: updated });
