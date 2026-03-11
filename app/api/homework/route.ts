@@ -7,6 +7,20 @@ import { db } from "@/lib/db";
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { ensureUserRows } from "@/lib/edu-service";
 
+function localizeHomeworkText(text: string) {
+  return text
+    .replace(/AI Lesson Homework/gi, "Домашнее задание по уроку")
+    .replace(/Lesson recap homework/gi, "Домашка на повторение урока")
+    .replace(/Lesson Homework/gi, "Домашнее задание")
+    .replace(/adaptive follow-up/gi, "персональное задание")
+    .replace(/Generated from live lesson/gi, "Сформировано по материалу урока")
+    .replace(/Review the saved lesson/gi, "Открой сохраненный урок")
+    .replace(/write a short summary in your own words/gi, "и запиши краткое объяснение своими словами")
+    .replace(/Open the lesson archive, read your notes, and prepare a concise recap with one solved example\./gi, "Открой архив урока, перечитай заметки и подготовь краткий конспект с одним решенным примером.")
+    .replace(/Write a short recap of/gi, "Сделай короткий конспект по теме")
+    .replace(/Soon/gi, "Скоро");
+}
+
 export async function GET(request: Request) {
   try {
     await ensureDatabaseReady();
@@ -114,6 +128,9 @@ export async function GET(request: Request) {
 
     const merged = homework.map((item) => ({
       ...item,
+      title: localizeHomeworkText(item.title),
+      topic: localizeHomeworkText(item.topic),
+      description: localizeHomeworkText(item.description),
       submission:
         submissionMap.get(item.id) ?? {
           status: HomeworkSubmissionStatus.NOT_STARTED,

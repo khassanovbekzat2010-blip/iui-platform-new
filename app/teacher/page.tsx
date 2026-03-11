@@ -75,6 +75,16 @@ type TeacherDashboardDTO = {
     createdAt: string;
     durationSec: number;
   }>;
+  studentProgressChart: Array<{
+    label: string;
+    xp: number;
+    level: number;
+    attention: number;
+  }>;
+  nextLessonPlan: {
+    title: string;
+    steps: string[];
+  };
 };
 
 export default function TeacherPage() {
@@ -162,7 +172,7 @@ export default function TeacherPage() {
   }));
 
   if (user?.role !== "teacher" && user?.role !== "admin") {
-    return <p className="text-sm text-muted-foreground">This page is available only for teacher/admin.</p>;
+    return <p className="text-sm text-muted-foreground">Раздел доступен только учителю или администратору.</p>;
   }
 
   if (query.isLoading) {
@@ -175,38 +185,38 @@ export default function TeacherPage() {
   }
 
   if (query.isError || !query.data) {
-    return <p className="text-sm text-muted-foreground">Teacher dashboard is unavailable right now.</p>;
+    return <p className="text-sm text-muted-foreground">Панель учителя временно недоступна.</p>;
   }
 
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Teacher EEG Command Center</h2>
-        <p className="text-muted-foreground">Live classroom attention, heatmap, at-risk alerts and AI guidance.</p>
+        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Панель учителя</h2>
+        <p className="text-muted-foreground">Живое внимание класса, прогресс учеников, AI-рекомендации и план следующего урока.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2"><Users className="h-4 w-4" />Students</CardDescription>
+            <CardDescription className="flex items-center gap-2"><Users className="h-4 w-4" />Ученики</CardDescription>
             <CardTitle>{query.data.summary.studentCount}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2"><Brain className="h-4 w-4" />Avg Engagement</CardDescription>
+            <CardDescription className="flex items-center gap-2"><Brain className="h-4 w-4" />Средняя вовлеченность</CardDescription>
             <CardTitle>{Math.round(liveRows.reduce((acc, row) => acc + row.engagementScore, 0) / Math.max(1, liveRows.length))}%</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2"><Radar className="h-4 w-4" />Classrooms</CardDescription>
+            <CardDescription className="flex items-center gap-2"><Radar className="h-4 w-4" />Классы</CardDescription>
             <CardTitle>{query.data.summary.classroomCount}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2"><AlertTriangle className="h-4 w-4" />At Risk</CardDescription>
+            <CardDescription className="flex items-center gap-2"><AlertTriangle className="h-4 w-4" />Нуждаются во внимании</CardDescription>
             <CardTitle>{liveRows.filter((row) => row.attention > 0 && row.attention < 40).length}</CardTitle>
           </CardHeader>
         </Card>
@@ -214,8 +224,8 @@ export default function TeacherPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Live Classroom Attention</CardTitle>
-          <CardDescription>Realtime view from EEG devices bound to students.</CardDescription>
+          <CardTitle>Внимание класса в реальном времени</CardTitle>
+          <CardDescription>График строится по живым EEG-данным учеников.</CardDescription>
         </CardHeader>
         <CardContent>
           <EngagementLineChart data={trendData} xKey="label" yKey="value" />
@@ -225,7 +235,7 @@ export default function TeacherPage() {
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader>
-            <CardTitle>Attention Heatmap</CardTitle>
+            <CardTitle>Карта внимания</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
             {liveRows.map((student) => (
@@ -243,8 +253,8 @@ export default function TeacherPage() {
               >
                 <p className="font-medium">{student.name}</p>
                 <p className="text-sm text-muted-foreground">{student.classroomName}</p>
-                <p className="mt-1 text-sm">Attention: {student.attention}%</p>
-                <p className="text-xs text-muted-foreground">State: {student.state}</p>
+                <p className="mt-1 text-sm">Внимание: {student.attention}%</p>
+                <p className="text-xs text-muted-foreground">Состояние: {student.state}</p>
               </div>
             ))}
           </CardContent>
@@ -252,7 +262,7 @@ export default function TeacherPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>AI Teacher Insights</CardTitle>
+            <CardTitle>AI-подсказки для учителя</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {query.data.recommendations.map((item) => (
@@ -261,7 +271,7 @@ export default function TeacherPage() {
                 <p className="text-muted-foreground">{item.content}</p>
               </div>
             ))}
-            {!query.data.recommendations.length ? <p className="text-muted-foreground">No AI insights yet.</p> : null}
+            {!query.data.recommendations.length ? <p className="text-muted-foreground">AI-подсказки пока не сформированы.</p> : null}
           </CardContent>
         </Card>
       </div>
@@ -269,11 +279,11 @@ export default function TeacherPage() {
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Homework Notifications</CardTitle>
-            <CardDescription>New submissions, AI checks and review queue.</CardDescription>
+            <CardTitle>Домашние задания</CardTitle>
+            <CardDescription>Новые ответы, AI-проверка и очередь на проверку учителя.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            {query.data.homeworkNotifications.length === 0 ? <p className="text-muted-foreground">No homework activity yet.</p> : null}
+            {query.data.homeworkNotifications.length === 0 ? <p className="text-muted-foreground">По домашке пока нет активности.</p> : null}
             {query.data.homeworkNotifications.map((item) => (
               <div key={item.id} className="rounded-xl border border-border/60 p-3">
                 <div className="flex items-center justify-between gap-2">
@@ -282,9 +292,9 @@ export default function TeacherPage() {
                 </div>
                 <p className="text-muted-foreground">{item.homeworkTitle}</p>
                 <p className="text-xs text-muted-foreground">
-                  {item.submittedAt ? `Submitted ${new Date(item.submittedAt).toLocaleString()}` : "Waiting for submission"}
+                  {item.submittedAt ? `Отправлено ${new Date(item.submittedAt).toLocaleString("ru-RU")}` : "Ожидает ответа"}
                   {typeof item.aiScore === "number" ? ` | AI ${item.aiScore}/100` : ""}
-                  {` | Reward ${item.points} XP`}
+                  {` | Награда ${item.points} XP`}
                 </p>
               </div>
             ))}
@@ -293,11 +303,24 @@ export default function TeacherPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Student Progress Feed</CardTitle>
-            <CardDescription>Latest level and XP changes across your classes.</CardDescription>
+            <CardTitle>Прогресс учеников</CardTitle>
+            <CardDescription>Уровень, недавний XP и текущая динамика по ученикам.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {query.data.studentProgress.length === 0 ? <p className="text-muted-foreground">No progress events yet.</p> : null}
+          <CardContent className="space-y-4 text-sm">
+            <div className="space-y-3">
+              {query.data.studentProgressChart.map((item) => (
+                <div key={item.label} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{item.label}</span>
+                    <span>Lvl {item.level} • XP {item.xp} • Внимание {item.attention}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div className="h-2 rounded-full bg-primary" style={{ width: `${Math.max(8, Math.min(100, item.attention))}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {query.data.studentProgress.length === 0 ? <p className="text-muted-foreground">Событий прогресса пока нет.</p> : null}
             {query.data.studentProgress.map((item) => (
               <div key={item.studentId} className="rounded-xl border border-border/60 p-3">
                 <div className="flex items-center justify-between gap-2">
@@ -306,8 +329,8 @@ export default function TeacherPage() {
                 </div>
                 <p className="text-muted-foreground">{item.classroomName}</p>
                 <p className="text-xs text-muted-foreground">
-                  Recent XP: {item.recentXp}
-                  {item.lastProgressAt ? ` | ${new Date(item.lastProgressAt).toLocaleString()}` : ""}
+                  Недавний XP: {item.recentXp}
+                  {item.lastProgressAt ? ` | ${new Date(item.lastProgressAt).toLocaleString("ru-RU")}` : ""}
                 </p>
               </div>
             ))}
@@ -317,18 +340,33 @@ export default function TeacherPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Lesson Analysis</CardTitle>
-          <CardDescription>Archive-ready summaries and post-lesson processing results.</CardDescription>
+          <CardTitle>{query.data.nextLessonPlan.title}</CardTitle>
+          <CardDescription>AI не только анализирует урок, но и предлагает готовую структуру следующего занятия.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {query.data.nextLessonPlan.steps.map((step, index) => (
+            <div key={`${index}-${step}`} className="rounded-xl border border-border/60 p-3">
+              <p className="text-sm font-medium">Шаг {index + 1}</p>
+              <p className="text-sm text-muted-foreground">{step}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Анализ последних уроков</CardTitle>
+          <CardDescription>Итоги уроков, ошибки AI-обработки и готовность архива.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          {query.data.recentLessons.length === 0 ? <p className="text-muted-foreground">No saved lessons yet.</p> : null}
+          {query.data.recentLessons.length === 0 ? <p className="text-muted-foreground">Сохраненных уроков пока нет.</p> : null}
           {query.data.recentLessons.map((lesson) => (
             <div key={lesson.id} className="rounded-xl border border-border/60 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-medium">{lesson.title}</p>
                 <span className="text-xs text-muted-foreground">{lesson.aiStatus}</span>
               </div>
-              <p className="text-muted-foreground">{lesson.subject} | {new Date(lesson.createdAt).toLocaleString()} | {Math.round(lesson.durationSec / 60)} min</p>
+              <p className="text-muted-foreground">{lesson.subject} | {new Date(lesson.createdAt).toLocaleString("ru-RU")} | {Math.round(lesson.durationSec / 60)} мин</p>
               <p className="mt-1 text-muted-foreground">
                 {lesson.summary
                   ? (() => {
@@ -339,7 +377,7 @@ export default function TeacherPage() {
                         return lesson.summary;
                       }
                     })()
-                  : lesson.aiError || "Summary is being prepared."}
+                  : lesson.aiError || "AI-summary еще готовится."}
               </p>
             </div>
           ))}

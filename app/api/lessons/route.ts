@@ -184,10 +184,15 @@ export async function POST(request: Request) {
       summary = ai.summary;
       keyTopics = ai.keyTopics;
       recommendations = ai.recommendations;
-      generatedHomework = ai.homework.map((item) => item.title).filter(Boolean);
+      generatedHomework = ai.homework
+        .map((item, index) => {
+          const topic = ai.keyTopics[index] ?? ai.keyTopics[0] ?? parsed.title;
+          return `По теме "${topic}" выполни понятное задание: кратко объясни основную идею, реши один пример и запиши итоговый вывод своими словами.`;
+        })
+        .filter(Boolean);
       if (!generatedHomework.length) {
         generatedHomework = [
-          `Write a short recap of ${parsed.subject} and solve one follow-up task based on: ${ai.keyTopics[0] ?? parsed.title}.`
+          `По теме "${ai.keyTopics[0] ?? parsed.title}" сделай короткий конспект, реши один пример и объясни ответ своими словами.`
         ];
       }
 
@@ -228,15 +233,15 @@ export async function POST(request: Request) {
             data: {
               studentId,
               lessonId: lesson.id,
-              title: `${parsed.subject} adaptive follow-up`,
+              title: `${parsed.subject}: персональное задание`,
               description:
                 ai.recommendations[0] ??
-                `Review the main concept from ${parsed.title} and answer a short reflective prompt.`,
+                `Повтори ключевую идею урока "${parsed.title}" и ответь на короткий вопрос по теме.`,
               difficulty: "adaptive",
               generatedByAI: true,
               type: "lesson_follow_up",
               status: "PENDING",
-              reason: ai.difficultMoments[0] ?? "Generated from saved lesson summary and live participation."
+              reason: ai.difficultMoments[0] ?? "Сформировано после анализа урока, вовлеченности и затруднений ученика."
             }
           });
 
@@ -248,7 +253,7 @@ export async function POST(request: Request) {
                 recommendationType: RecommendationType.ADAPTIVE_TASK,
                 content:
                   ai.recommendations[0] ??
-                  `Student should review ${ai.keyTopics[0] ?? parsed.subject} with one short scaffolded task.`
+                  `Ученику стоит повторить тему "${ai.keyTopics[0] ?? parsed.subject}" через одно короткое пошаговое задание.`
               },
               {
                 studentId,
@@ -256,7 +261,7 @@ export async function POST(request: Request) {
                 recommendationType: RecommendationType.TEACHER_INSIGHT,
                 content:
                   ai.recommendations.join(" ") ||
-                  `Lesson ${parsed.title} was saved. Use the archive summary to plan the next explanation block.`
+                  `Урок "${parsed.title}" сохранен. Используйте summary и архив, чтобы спланировать следующий блок объяснения.`
               }
             ]
           });
@@ -267,10 +272,10 @@ export async function POST(request: Request) {
                 createdBy: user.id,
                 studentId,
                 lessonId: lesson.id,
-                title: `AI Lesson Homework #${index + 1}`,
+                title: `Домашнее задание по уроку #${index + 1}`,
                 subject: parsed.subject,
                 grade: Number(parsed.classroomName?.match(/\d+/)?.[0] ?? 9),
-                topic: ai.keyTopics[index] ?? "Generated from live lesson",
+                topic: ai.keyTopics[index] ?? "Материал текущего урока",
                 description: task,
                 content: task,
                 generatedByAI: true,
@@ -311,13 +316,13 @@ export async function POST(request: Request) {
             data: {
               studentId,
               lessonId: lesson.id,
-              title: `${parsed.subject} recap task`,
-              description: `Review the saved lesson "${parsed.title}" and write a short summary in your own words.`,
+              title: `${parsed.subject}: задание на повторение`,
+              description: `Открой сохраненный урок "${parsed.title}", повтори тему и запиши краткое объяснение своими словами.`,
               difficulty: "medium",
               generatedByAI: false,
               type: "lesson_recap",
               status: "PENDING",
-              reason: "Fallback task created because AI post-processing was unavailable."
+              reason: "Резервное задание создано, потому что AI-анализ урока был временно недоступен."
             }
           });
           const homework = await db.homework.create({
@@ -325,12 +330,12 @@ export async function POST(request: Request) {
               createdBy: user.id,
               studentId,
               lessonId: lesson.id,
-              title: "Lesson recap homework",
+              title: "Домашка на повторение урока",
               subject: parsed.subject,
               grade: Number(parsed.classroomName?.match(/\d+/)?.[0] ?? 9),
               topic: parsed.title,
-              description: `Open the lesson archive, read your notes, and prepare a concise recap with one solved example.`,
-              content: `Open the lesson archive, read your notes, and prepare a concise recap with one solved example.`,
+              description: `Открой архив урока, перечитай заметки и подготовь краткий конспект с одним решенным примером.`,
+              content: `Открой архив урока, перечитай заметки и подготовь краткий конспект с одним решенным примером.`,
               generatedByAI: false,
               difficulty: "medium",
               dueDate,

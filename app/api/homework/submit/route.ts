@@ -1,12 +1,12 @@
-import { HomeworkSubmissionStatus } from "@prisma/client";
+﻿import { HomeworkSubmissionStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 
-import { isStudentRole } from "@/lib/auth/rbac";
 import { reviewHomeworkText } from "@/lib/ai/homework-text-review";
+import { isStudentRole } from "@/lib/auth/rbac";
 import { requireSession } from "@/lib/auth/require-session";
-import { addXp, ensureUserRows, refreshStreak } from "@/lib/edu-service";
 import { db } from "@/lib/db";
 import { ensureDatabaseReady } from "@/lib/db-init";
+import { addXp, ensureUserRows, refreshStreak } from "@/lib/edu-service";
 import { completeMissionByTitle, grantHeroCoins } from "@/server/iui/gamification.service";
 
 export async function POST(request: Request) {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const user = session.user;
 
     if (!isStudentRole(user.role)) {
-      return NextResponse.json({ error: "Only students can submit homework" }, { status: 403 });
+      return NextResponse.json({ error: "Только ученик может отправлять домашнее задание" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const textAnswer = String(body.textAnswer ?? "").trim();
 
     if (!homeworkId || !textAnswer) {
-      return NextResponse.json({ error: "homeworkId and textAnswer are required" }, { status: 400 });
+      return NextResponse.json({ error: "homeworkId и textAnswer обязательны" }, { status: 400 });
     }
 
     await ensureUserRows(user.id);
@@ -36,13 +36,13 @@ export async function POST(request: Request) {
     ]);
 
     if (!homework) {
-      return NextResponse.json({ error: "Homework not found" }, { status: 404 });
+      return NextResponse.json({ error: "Домашнее задание не найдено" }, { status: 404 });
     }
     if (homework.studentId && homework.studentId !== user.id) {
-      return NextResponse.json({ error: "This homework is assigned to another student" }, { status: 403 });
+      return NextResponse.json({ error: "Это задание назначено другому ученику" }, { status: 403 });
     }
     if (!homework.studentId && profile?.grade && homework.grade !== profile.grade) {
-      return NextResponse.json({ error: "Access denied for this homework" }, { status: 403 });
+      return NextResponse.json({ error: "Нет доступа к этому заданию" }, { status: 403 });
     }
 
     const aiReview = await reviewHomeworkText({
@@ -64,8 +64,8 @@ export async function POST(request: Request) {
 
     const feedbackText =
       aiReview.status === HomeworkSubmissionStatus.ACCEPTED
-        ? `${aiReview.feedback} Начислено 20 XP.`
-        : `${aiReview.feedback} Правильный ориентир: ${aiReview.idealAnswer}`;
+        ? `${aiReview.feedback} Начислено 20 XP и coins героя.`
+        : `${aiReview.feedback} Ориентир правильного ответа: ${aiReview.idealAnswer}`;
 
     const submission = await db.homeworkSubmission.upsert({
       where: {
@@ -116,6 +116,6 @@ export async function POST(request: Request) {
       }
     });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to submit homework", details: String(error) }, { status: 500 });
+    return NextResponse.json({ error: "Не удалось отправить домашнее задание", details: String(error) }, { status: 500 });
   }
 }

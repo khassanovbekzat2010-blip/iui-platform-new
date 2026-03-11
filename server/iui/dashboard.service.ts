@@ -440,6 +440,41 @@ export async function getTeacherDashboardData(teacherId: string) {
     }
   }
 
+  const engagementAverage = students.length
+    ? Math.round(students.reduce((acc, student) => acc + student.engagementScore, 0) / students.length)
+    : 0;
+
+  const nextLessonPlan =
+    engagementAverage < 45
+      ? {
+          title: "План следующего урока: вернуть вовлеченность",
+          steps: [
+            "Начните урок с короткого квиза на 2-3 минуты по прошлой теме.",
+            "Разбейте объяснение на блоки по 5-7 минут и после каждого дайте один вопрос на понимание.",
+            "Добавьте работу в парах: один ученик объясняет, второй проверяет решение.",
+            "Завершите урок мини-игрой или быстрым практическим кейсом."
+          ]
+        }
+      : engagementAverage < 70
+      ? {
+          title: "План следующего урока: удержать темп",
+          steps: [
+            "Сохраните текущий темп и начните с короткого повторения.",
+            "В середине урока добавьте групповое задание с распределением ролей.",
+            "Для сильных учеников подготовьте один challenge-вопрос.",
+            "В конце соберите мини-рефлексию: что было понятно, что еще требует пояснения."
+          ]
+        }
+      : {
+          title: "План следующего урока: усилить глубину",
+          steps: [
+            "Начните с problem-based вопроса без готовой формулы.",
+            "Дайте ученикам выбрать способ решения: индивидуально, в паре или у доски.",
+            "Добавьте дискуссионный блок или мини-дебаты по теме.",
+            "В финале дайте challenge-задание для закрепления на высоком уровне."
+          ]
+        };
+
   return {
     summary: {
       classroomCount: classrooms.length,
@@ -465,6 +500,15 @@ export async function getTeacherDashboardData(teacherId: string) {
         lastProgressAt: latestXp?.createdAt.toISOString() ?? null
       };
     }),
+    studentProgressChart: students.map((student) => {
+      const latestXp = latestXpByStudent.get(student.id);
+      return {
+        label: student.name.split(" ")[0] ?? student.name,
+        xp: latestXp?.xp ?? 0,
+        level: latestXp?.level ?? 1,
+        attention: student.attention
+      };
+    }),
     atRiskStudents,
     heatmap,
     homeworkNotifications: recentHomeworkSubmissions.map((item) => ({
@@ -485,7 +529,8 @@ export async function getTeacherDashboardData(teacherId: string) {
     recentLessons: recentLessons.map((item) => ({
       ...item,
       createdAt: item.createdAt.toISOString()
-    }))
+    })),
+    nextLessonPlan
   };
 }
 

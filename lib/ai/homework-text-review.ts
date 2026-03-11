@@ -29,17 +29,20 @@ function fallbackReview(input: Input): Output {
   const answerTokens = Array.from(new Set(normalize(input.studentAnswer)));
   const overlap = answerTokens.filter((token) => referenceTokens.includes(token)).length;
   const ratio = referenceTokens.length ? overlap / referenceTokens.length : 0;
-  const lengthBonus = Math.min(20, Math.floor(input.studentAnswer.trim().length / 12));
-  const score = Math.max(25, Math.min(96, Math.round(ratio * 100) + lengthBonus));
-  const accepted = score >= 65;
-  const idealAnswer = `Нужно кратко и по пунктам объяснить тему "${input.homeworkTopic || input.homeworkTitle}", использовать ключевые понятия из задания и привести хотя бы один корректный пример или вывод.`;
+  const answerLength = input.studentAnswer.trim().length;
+  const hasStructuredAnswer = /[.!?]|1\.|2\.|3\.|потому что|значит|следовательно|формула|себебі|мысалы/i.test(input.studentAnswer);
+  const lengthBonus = Math.min(24, Math.floor(answerLength / 10));
+  const structureBonus = hasStructuredAnswer ? 12 : 0;
+  const score = Math.max(30, Math.min(98, Math.round(ratio * 100) + lengthBonus + structureBonus));
+  const accepted = score >= 52 || (answerLength >= 70 && overlap >= 2);
+  const idealAnswer = `Нужно кратко и по шагам раскрыть тему "${input.homeworkTopic || input.homeworkTitle}": дать основную мысль, использовать ключевые термины из задания и привести один корректный пример или итоговый вывод.`;
 
   return {
     status: accepted ? HomeworkSubmissionStatus.ACCEPTED : HomeworkSubmissionStatus.NEEDS_REVISION,
     score,
     feedback: accepted
-      ? "Ответ достаточно полный. Основная логика и тема раскрыты корректно."
-      : "Ответ пока слишком общий или не покрывает ключевые элементы задания.",
+      ? "Ответ достаточно полный: тема раскрыта, есть логика объяснения и связь с заданием."
+      : "Ответ пока слишком общий или не показывает ключевые шаги решения. Добавь объяснение, термины по теме и итоговый вывод.",
     idealAnswer
   };
 }
@@ -63,14 +66,15 @@ export async function reviewHomeworkText(input: Input): Promise<Output> {
         messages: [
           {
             role: "system",
-            content: "You are a strict homework evaluator. Return JSON only with keys: score, accepted, feedback, idealAnswer."
+            content:
+              "Ты строгий, но справедливый школьный проверяющий. Верни только JSON с ключами: score, accepted, feedback, idealAnswer. Все поля пиши на русском языке."
           },
           {
             role: "user",
-            content: `Homework title: ${input.homeworkTitle}
-Topic: ${input.homeworkTopic}
-Task: ${input.homeworkDescription}
-Student answer: ${input.studentAnswer}`
+            content: `Название задания: ${input.homeworkTitle}
+Тема: ${input.homeworkTopic}
+Условие: ${input.homeworkDescription}
+Ответ ученика: ${input.studentAnswer}`
           }
         ]
       })
@@ -94,12 +98,13 @@ Student answer: ${input.studentAnswer}`
       idealAnswer?: string;
     };
 
-    const score = Math.max(0, Math.min(100, Math.round(parsed.score ?? 0)));
+    const fallback = fallbackReview(input);
+    const score = Math.max(0, Math.min(100, Math.round(parsed.score ?? fallback.score)));
     return {
-      status: parsed.accepted ? HomeworkSubmissionStatus.ACCEPTED : HomeworkSubmissionStatus.NEEDS_REVISION,
+      status: parsed.accepted ?? score >= 52 ? HomeworkSubmissionStatus.ACCEPTED : HomeworkSubmissionStatus.NEEDS_REVISION,
       score,
-      feedback: parsed.feedback ?? fallbackReview(input).feedback,
-      idealAnswer: parsed.idealAnswer ?? fallbackReview(input).idealAnswer
+      feedback: parsed.feedback ?? fallback.feedback,
+      idealAnswer: parsed.idealAnswer ?? fallback.idealAnswer
     };
   } catch {
     return fallbackReview(input);

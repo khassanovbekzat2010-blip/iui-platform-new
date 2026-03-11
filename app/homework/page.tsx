@@ -1,7 +1,15 @@
-"use client";
+﻿"use client";
 
 import { HomeworkSubmissionStatus } from "@prisma/client";
-import { BookCheck, Camera, Clock3, Sparkles, Trophy } from "lucide-react";
+import {
+  BookCheck,
+  Camera,
+  CheckCircle2,
+  Clock3,
+  Sparkles,
+  Target,
+  Trophy
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -78,10 +86,18 @@ function statusLabel(status: HomeworkSubmissionStatus | "NOT_STARTED" | "SUBMITT
     case HomeworkSubmissionStatus.NEEDS_REVISION:
       return "Нужно доработать";
     case HomeworkSubmissionStatus.UNDER_REVIEW:
-      return "Проверяется";
+      return "На проверке";
     default:
       return "Отправлено";
   }
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  });
 }
 
 export default function HomeworkPage() {
@@ -155,7 +171,9 @@ export default function HomeworkPage() {
   }, [studentHomework, tab]);
 
   const summary = useMemo(() => {
-    const submitted = studentHomework.filter((item) => (item.submission?.status ?? HomeworkSubmissionStatus.NOT_STARTED) !== HomeworkSubmissionStatus.NOT_STARTED).length;
+    const submitted = studentHomework.filter(
+      (item) => (item.submission?.status ?? HomeworkSubmissionStatus.NOT_STARTED) !== HomeworkSubmissionStatus.NOT_STARTED
+    ).length;
     const accepted = studentHomework.filter((item) => item.submission?.status === HomeworkSubmissionStatus.ACCEPTED).length;
     return {
       total: studentHomework.length,
@@ -175,7 +193,7 @@ export default function HomeworkPage() {
         method: "POST",
         body: JSON.stringify({ userId, homeworkId, textAnswer })
       });
-      pushToast("Ответ отправлен", "AI уже проверил текстовый ответ и обновил результат.");
+      pushToast("Ответ отправлен", "Домашняя работа отправлена на проверку. Если ответ хороший, ты получишь XP и монеты.");
       loadHomework();
     } catch (error) {
       pushToast("Ошибка", error instanceof Error ? error.message : "Не удалось отправить ответ");
@@ -195,7 +213,7 @@ export default function HomeworkPage() {
     try {
       const dataUrl = await convertFileToDataUrl(file);
       setPhotoDataByHomework((prev) => ({ ...prev, [homeworkId]: dataUrl }));
-      pushToast("Фото добавлено", "Теперь можно отправить фото на AI-проверку.");
+      pushToast("Фото добавлено", "Теперь можно отправить решение на AI-проверку.");
     } catch (error) {
       pushToast("Ошибка изображения", error instanceof Error ? error.message : "Не удалось загрузить изображение");
     }
@@ -217,7 +235,7 @@ export default function HomeworkPage() {
           note: photoNoteByHomework[homeworkId] ?? ""
         })
       });
-      pushToast("Фото проверено", "AI обновил статус и feedback.");
+      pushToast("Фото отправлено", "AI проверил фото и обновил результат.");
       loadHomework();
     } catch (error) {
       pushToast("Ошибка AI", error instanceof Error ? error.message : "Не удалось проверить фото");
@@ -234,7 +252,7 @@ export default function HomeworkPage() {
         method: "POST",
         body: JSON.stringify({ userId, role: user?.role, ...newHomework })
       });
-      pushToast("Домашка создана", "Задание опубликовано для учеников.");
+      pushToast("Домашняя работа создана", "Задание опубликовано для учеников.");
       setNewHomework({
         title: "",
         subject: SUBJECTS[0],
@@ -246,7 +264,7 @@ export default function HomeworkPage() {
       });
       loadHomework();
     } catch (error) {
-      pushToast("Ошибка", error instanceof Error ? error.message : "Не удалось создать домашку");
+      pushToast("Ошибка", error instanceof Error ? error.message : "Не удалось создать домашнюю работу");
     }
   };
 
@@ -283,7 +301,7 @@ export default function HomeworkPage() {
   if (errorText) {
     return (
       <section className="space-y-4">
-        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Домашние задания</h2>
+        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Домашняя работа</h2>
         <p className="text-sm text-muted-foreground">{errorText}</p>
         <Button variant="outline" onClick={loadHomework}>
           Повторить загрузку
@@ -294,17 +312,19 @@ export default function HomeworkPage() {
 
   return (
     <section className="space-y-6">
-      <div>
-        <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Домашние задания</h2>
-        <p className="text-muted-foreground">
-          После урока здесь появляются персональные задания. Хороший ответ дает XP, coins и укрепляет streak.
-        </p>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="font-[var(--font-space-grotesk)] text-3xl font-semibold tracking-tight">Домашняя работа</h2>
+          <p className="max-w-3xl text-muted-foreground">
+            После урока здесь появляются персональные задания по теме. За сильный ответ ученик получает XP, монеты героя и укрепляет серию успешных дней.
+          </p>
+        </div>
       </div>
 
       {role === "student" ? (
         <>
           <div className="grid gap-4 md:grid-cols-3">
-            <Card>
+            <Card className="border-sky-200/60 bg-[linear-gradient(180deg,rgba(239,246,255,0.92),rgba(255,255,255,0.98))]">
               <CardContent className="flex items-center gap-3 pt-6">
                 <BookCheck className="h-5 w-5 text-sky-600" />
                 <div>
@@ -313,7 +333,7 @@ export default function HomeworkPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-amber-200/60 bg-[linear-gradient(180deg,rgba(255,247,237,0.92),rgba(255,255,255,0.98))]">
               <CardContent className="flex items-center gap-3 pt-6">
                 <Clock3 className="h-5 w-5 text-amber-600" />
                 <div>
@@ -322,21 +342,21 @@ export default function HomeworkPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-emerald-200/60 bg-[linear-gradient(180deg,rgba(236,253,245,0.92),rgba(255,255,255,0.98))]">
               <CardContent className="flex items-center gap-3 pt-6">
                 <Trophy className="h-5 w-5 text-emerald-600" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Принято AI/учителем</p>
+                  <p className="text-sm text-muted-foreground">Принято</p>
                   <p className="text-2xl font-semibold">{summary.accepted}</p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="border-border/60 bg-white/90">
             <CardHeader>
-              <CardTitle>Фильтр</CardTitle>
-              <CardDescription>Оставлены только два понятных состояния: новые задания и уже отправленные ответы.</CardDescription>
+              <CardTitle>Разделы</CardTitle>
+              <CardDescription>Оставлены только два состояния: новые задания и уже отправленные ответы.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
               {tabs.map((item) => (
@@ -347,54 +367,72 @@ export default function HomeworkPage() {
             </CardContent>
           </Card>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             {filteredStudentHomework.length === 0 ? (
               <Card>
-                <CardContent className="pt-6 text-sm text-muted-foreground">В этой категории пока нет заданий.</CardContent>
+                <CardContent className="pt-6 text-sm text-muted-foreground">В этом разделе пока нет заданий.</CardContent>
               </Card>
             ) : null}
+
             {filteredStudentHomework.map((item) => (
-              <Card key={item.id} className="overflow-hidden">
-                <CardHeader className="border-b border-border/50 bg-[linear-gradient(180deg,rgba(248,250,252,0.8),rgba(255,255,255,0.95))]">
+              <Card key={item.id} className="overflow-hidden border-0 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+                <CardHeader className="border-b border-border/50 bg-[linear-gradient(135deg,#fff7ed,#ffffff_46%,#eff6ff)]">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <CardTitle>{item.title}</CardTitle>
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">{item.subject}</Badge>
+                        <Badge variant="outline">{item.topic}</Badge>
+                        <Badge variant="outline">До {formatDate(item.dueDate)}</Badge>
+                      </div>
+                      <CardTitle className="text-2xl">{item.title}</CardTitle>
                       <CardDescription>
-                        {item.subject} • {item.topic} • {new Date(item.dueDate).toLocaleDateString("ru-RU")}
+                        Класс {item.grade}. Награда за хорошее выполнение: {item.points} XP и монеты героя.
                       </CardDescription>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="outline">{statusLabel(item.submission?.status ?? HomeworkSubmissionStatus.NOT_STARTED)}</Badge>
-                      {item.generatedByAI ? <Badge variant="success">AI-подбор</Badge> : null}
+                      {item.generatedByAI ? <Badge variant="success">Подобрано AI</Badge> : null}
                       {item.difficulty ? <Badge variant="outline">{item.difficulty}</Badge> : null}
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4 pt-5">
-                  <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
-                    <p className="text-sm font-medium">Что нужно сделать</p>
-                    <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
-                    <p className="mt-3 text-xs text-muted-foreground">Награда за качественный ответ: {item.points} XP + coins героя.</p>
-                  </div>
 
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Твой ответ</p>
-                    <Textarea
-                      placeholder="Напиши решение, объясни шаги или дай краткий вывод по теме."
-                      value={answers[item.id] ?? item.submission?.textAnswer ?? ""}
-                      onChange={(event) => setAnswers((prev) => ({ ...prev, [item.id]: event.target.value }))}
-                    />
-                    <Button onClick={() => submitHomework(item.id)}>Отправить текстовый ответ</Button>
-                  </div>
-
-                  <div className="rounded-2xl border border-dashed border-border/60 p-4">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Camera className="h-4 w-4" />
-                      Фото решения
+                <CardContent className="space-y-5 pt-6">
+                  <div className="rounded-[28px] border border-sky-200/70 bg-[linear-gradient(180deg,rgba(239,246,255,0.95),rgba(255,255,255,0.98))] p-5 shadow-[0_10px_35px_rgba(14,165,233,0.08)]">
+                    <div className="flex items-center gap-2 text-sky-800">
+                      <Target className="h-5 w-5" />
+                      <p className="text-base font-semibold tracking-tight">Домашнее задание</p>
                     </div>
-                    <p className="mt-2 text-sm text-muted-foreground">Если решал в тетради, прикрепи фото и отправь на AI-проверку.</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <label className="inline-flex cursor-pointer items-center rounded-xl border border-border/60 px-3 py-2 text-sm">
+                    <p className="mt-3 text-sm font-medium text-slate-900">Что нужно сделать</p>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{item.description}</p>
+                  </div>
+
+                  <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+                    <div className="space-y-3 rounded-[24px] border border-border/60 bg-white p-5">
+                      <p className="text-sm font-semibold text-slate-900">Ответ ученика</p>
+                      <Textarea
+                        className="min-h-[180px]"
+                        placeholder="Напиши развернутый ответ по теме урока. Можно объяснить шаги решения, дать вывод или описать ход мысли."
+                        value={answers[item.id] ?? item.submission?.textAnswer ?? ""}
+                        onChange={(event) => setAnswers((prev) => ({ ...prev, [item.id]: event.target.value }))}
+                      />
+                      <div className="flex flex-wrap gap-3">
+                        <Button onClick={() => submitHomework(item.id)}>Отправить ответ</Button>
+                        <div className="rounded-full border border-border/60 px-3 py-2 text-xs text-muted-foreground">
+                          Чем точнее и понятнее ответ, тем выше шанс получить XP.
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 rounded-[24px] border border-dashed border-border/60 bg-muted/15 p-5">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <Camera className="h-4 w-4" />
+                        Фото решения
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Если решение написано в тетради, загрузи фото. AI посмотрит изображение и добавит обратную связь.
+                      </p>
+                      <label className="inline-flex cursor-pointer items-center rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium">
                         Выбрать фото
                         <input
                           type="file"
@@ -403,37 +441,38 @@ export default function HomeworkPage() {
                           onChange={(event) => handlePhotoSelected(item.id, event.target.files?.[0] ?? null)}
                         />
                       </label>
+                      <Textarea
+                        placeholder="Если нужно, коротко поясни, что именно на фото и где у тебя сомнение."
+                        value={photoNoteByHomework[item.id] ?? ""}
+                        onChange={(event) => setPhotoNoteByHomework((prev) => ({ ...prev, [item.id]: event.target.value }))}
+                      />
                       <Button variant="outline" onClick={() => runAiPhotoCheck(item.id)}>
                         Проверить фото через AI
                       </Button>
+                      {(photoDataByHomework[item.id] ?? item.submission?.photoDataUrl) ? (
+                        <div className="overflow-hidden rounded-2xl border border-border/60">
+                          <img
+                            src={photoDataByHomework[item.id] ?? item.submission?.photoDataUrl ?? ""}
+                            alt={`Решение для ${item.title}`}
+                            className="max-h-80 w-full object-cover"
+                          />
+                        </div>
+                      ) : null}
                     </div>
-                    <Textarea
-                      className="mt-3"
-                      placeholder="Коротко напиши, что именно решил и в чем сомневаешься."
-                      value={photoNoteByHomework[item.id] ?? ""}
-                      onChange={(event) => setPhotoNoteByHomework((prev) => ({ ...prev, [item.id]: event.target.value }))}
-                    />
-                    {(photoDataByHomework[item.id] ?? item.submission?.photoDataUrl) ? (
-                      <div className="mt-3 overflow-hidden rounded-xl border border-border/60">
-                        <img
-                          src={photoDataByHomework[item.id] ?? item.submission?.photoDataUrl ?? ""}
-                          alt={`Решение для ${item.title}`}
-                          className="max-h-80 w-full object-cover"
-                        />
-                      </div>
-                    ) : null}
                   </div>
 
-                  {typeof item.submission?.aiScore === "number" ? (
-                    <div className="rounded-2xl border border-border/60 bg-slate-50 p-4">
-                      <div className="flex items-center gap-2 text-sm font-medium">
-                        <Sparkles className="h-4 w-4 text-sky-600" />
-                        Результат проверки
+                  {(typeof item.submission?.aiScore === "number" || item.submission?.feedback) && (
+                    <div className="rounded-[24px] border border-emerald-200/70 bg-[linear-gradient(180deg,rgba(236,253,245,0.96),rgba(255,255,255,0.98))] p-5">
+                      <div className="flex items-center gap-2 text-emerald-800">
+                        <CheckCircle2 className="h-5 w-5" />
+                        <p className="font-semibold">Обратная связь</p>
                       </div>
-                      <p className="mt-2 text-sm text-muted-foreground">Оценка AI: {item.submission.aiScore}/100</p>
-                      {item.submission.feedback ? <p className="mt-2 text-sm">{item.submission.feedback}</p> : null}
+                      {typeof item.submission?.aiScore === "number" ? (
+                        <p className="mt-3 text-sm text-slate-700">Оценка проверки: {item.submission.aiScore}/100</p>
+                      ) : null}
+                      {item.submission?.feedback ? <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{item.submission.feedback}</p> : null}
                     </div>
-                  ) : null}
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -444,7 +483,7 @@ export default function HomeworkPage() {
           <Card>
             <CardHeader>
               <CardTitle>Создать домашнее задание</CardTitle>
-              <CardDescription>Форма для ручной публикации задания от учителя.</CardDescription>
+              <CardDescription>Ручная публикация задания от учителя.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Input placeholder="Название задания" value={newHomework.title} onChange={(event) => setNewHomework((prev) => ({ ...prev, title: event.target.value }))} />
@@ -470,7 +509,7 @@ export default function HomeworkPage() {
           <Card>
             <CardHeader>
               <CardTitle>Ответы учеников</CardTitle>
-              <CardDescription>Проверка ответов, комментарии и финальное решение учителя.</CardDescription>
+              <CardDescription>Проверка ответов, комментарии и итоговый статус.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {teacherHomework.length === 0 ? <p className="text-sm text-muted-foreground">Пока нет опубликованных домашних заданий.</p> : null}
@@ -479,7 +518,7 @@ export default function HomeworkPage() {
                   <div>
                     <p className="font-medium">{item.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      {item.subject} • {item.topic} • дедлайн {new Date(item.dueDate).toLocaleDateString("ru-RU")}
+                      {item.subject} • {item.topic} • дедлайн {formatDate(item.dueDate)}
                     </p>
                   </div>
                   {item.submissions.length === 0 ? <p className="text-sm text-muted-foreground">Ученики еще не отправили ответы.</p> : null}
@@ -523,3 +562,4 @@ export default function HomeworkPage() {
     </section>
   );
 }
+

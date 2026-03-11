@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const user = session.user;
 
     if (!isTeacherRole(user.role)) {
-      return NextResponse.json({ error: "Only teachers can publish homework from lesson" }, { status: 403 });
+      return NextResponse.json({ error: "Только учитель может публиковать домашку из урока" }, { status: 403 });
     }
 
     const parsed = schema.parse(await request.json());
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         select: { id: true, teacherId: true }
       });
       if (!lesson || lesson.teacherId !== user.id) {
-        return NextResponse.json({ error: "Lesson not found or access denied" }, { status: 404 });
+        return NextResponse.json({ error: "Урок не найден или доступ запрещен" }, { status: 404 });
       }
     }
 
@@ -57,10 +57,10 @@ export async function POST(request: Request) {
           data: {
             createdBy: user.id,
             studentId,
-            title: `${parsed.titlePrefix ?? "AI Lesson Homework"} #${index + 1}`,
+            title: `${parsed.titlePrefix ?? "Домашнее задание по уроку"} #${index + 1}`,
             subject: parsed.subject,
             grade: parsed.grade,
-            topic: "Generated from live lesson",
+            topic: "Сформировано по материалу урока",
             description: task,
             content: task,
             generatedByAI: true,
