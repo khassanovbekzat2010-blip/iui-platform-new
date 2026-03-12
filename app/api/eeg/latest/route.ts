@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireSession } from "@/lib/auth/require-session";
-import { db } from "@/lib/db";
 import { canAccessStudent } from "@/lib/eeg/access";
+import { createMockEEGReading } from "@/lib/eeg/mock-stream";
 
 const querySchema = z.object({
   studentId: z.string().min(2)
@@ -23,31 +23,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const reading = await db.eEGReading.findFirst({
-      where: { studentId: parsed.studentId },
-      orderBy: { timestamp: "desc" },
-      select: {
-        id: true,
-        studentId: true,
-        attention: true,
-        meditation: true,
-        signal: true,
-        raw: true,
-        engagementScore: true,
-        state: true,
-        timestamp: true,
-        lessonSessionId: true,
-        deviceId: true
-      }
-    });
+    const reading = createMockEEGReading({ studentId: parsed.studentId });
 
     return NextResponse.json({
-      reading: reading
-        ? {
-            ...reading,
-            timestamp: reading.timestamp.toISOString()
-          }
-        : null
+      reading: {
+        ...reading,
+        timestamp: reading.timestamp.toISOString()
+      }
     });
   } catch (error) {
     return NextResponse.json(
@@ -56,4 +38,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

@@ -3,35 +3,33 @@
 #include <HTTPClient.h>
 #include <time.h>
 
-HardwareSerial brain(2);
-
-#define TGAM_RX 16
-#define TGAM_TX 17
-
 const char* ssid = "S7ROBOTICS";
 const char* password = "12341234";
 
 const char* backendUrl = "http://172.20.10.3:3000/api/eeg";
 const char* deviceId = "esp32_device_1";
 const char* deviceApiKey = "5d9e1a594c5e1b9dfc4ddb8b0108e37ecd16ad262ce1e274";
+const char* studentId = "student_1";
 
 WebServer server(80);
 
-int attention = 0;
-int meditation = 0;
-int poorSignal = 200;
+int attention = 72;
+int meditation = 61;
+int poorSignal = 18;
 int rawValue = 0;
 
-bool tgAmSeen = false;
-unsigned long lastTgamAt = 0;
+bool simulatorReady = false;
+unsigned long lastSampleAt = 0;
 unsigned long lastPostAt = 0;
 unsigned long lastWifiRetryAt = 0;
 unsigned long okPosts = 0;
 unsigned long failPosts = 0;
+unsigned long dropoutUntil = 0;
 
+const unsigned long sampleIntervalMs = 180;
 const unsigned long postIntervalMs = 1200;
 const unsigned long wifiRetryMs = 10000;
-const unsigned long tgamFreshMs = 3000;
+const unsigned long simulatorFreshMs = 3000;
 
 const char webpage[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
@@ -39,7 +37,7 @@ const char webpage[] PROGMEM = R"rawliteral(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IUI ESP32 TGAM</title>
+  <title>IUI ESP32 EEG Simulator</title>
   <style>
     body { font-family: Arial, sans-serif; background: #0f172a; color: #fff; margin: 0; padding: 20px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
@@ -59,7 +57,7 @@ const char webpage[] PROGMEM = R"rawliteral(
   </div>
   <div class="meta">
     <div id="wifi">Wi-Fi: ...</div>
-    <div id="tgam">TGAM: ...</div>
+    <div id="sim">Simulator: ...</div>
     <div id="post">Posts: ...</div>
     <div id="device">Device: ...</div>
   </div>
@@ -73,7 +71,7 @@ const char webpage[] PROGMEM = R"rawliteral(
         signal.textContent = data.signal;
         raw.textContent = data.raw;
         wifi.textContent = `Wi-Fi: ${data.wifi}`;
-        tgam.textContent = `TGAM: ${data.tgam}`;
+        sim.textContent = `Simulator: ${data.sim}`;
         post.textContent = `Posts: ok=${data.okPosts}, fail=${data.failPosts}, last=${data.lastPost}`;
         device.textContent = `Device: ${data.deviceId}`;
       } catch (error) {
@@ -92,8 +90,9 @@ String wifiStatusText() {
 }
 
 String tgamStatusText() {
-  if (!tgAmSeen) return "no packets yet";
-  if (millis() - lastTgamAt > tgamFreshMs) return "stale";
+  if (!simulatorReady) return "booting";
+  if (millis() - lastSampleAt > simulatorFreshMs) return "stale";
+  if (millis() < dropoutUntil) return "attention dip";
   if (poorSignal <= 25) return "good";
   if (poorSignal <= 50) return "medium";
   return "weak";
@@ -116,7 +115,7 @@ void handleData() {
   json += "\"signal\":" + String(poorSignal) + ",";
   json += "\"raw\":" + String(rawValue) + ",";
   json += "\"wifi\":\"" + wifiStatusText() + "\",";
-  json += "\"tgam\":\"" + tgamStatusText() + "\",";
+  json += "\"sim\":\"" + tgamStatusText() + "\",";
   json += "\"okPosts\":" + String(okPosts) + ",";
   json += "\"failPosts\":" + String(failPosts) + ",";
   json += "\"lastPost\":\"" + String((okPosts + failPosts) == 0 ? "never" : (failPosts > 0 ? "check serial" : "ok")) + "\",";
@@ -138,71 +137,51 @@ void ensureWifi() {
 }
 
 bool hasFreshTgamData() {
-  return tgAmSeen && (millis() - lastTgamAt <= tgamFreshMs);
+  return simulatorReady && (millis() - lastSampleAt <= simulatorFreshMs);
 }
 
-void parsePayload(byte* payload, int length) {
-  int i = 0;
-  while (i < length) {
-    switch (payload[i]) {
-      case 0x02:
-        if (i + 1 < length) poorSignal = payload[i + 1];
-        i += 2;
-        break;
-      case 0x04:
-        if (i + 1 < length) attention = payload[i + 1];
-        i += 2;
-        break;
-      case 0x05:
-        if (i + 1 < length) meditation = payload[i + 1];
-        i += 2;
-        break;
-      case 0x80:
-        if (i + 3 < length) {
-          rawValue = (payload[i + 2] << 8) | payload[i + 3];
-          if (rawValue > 32767) rawValue -= 65536;
-        }
-        i += 4;
-        break;
-      case 0x83:
-        i += 26;
-        break;
-      default:
-        i++;
-        break;
-    }
-  }
+int clampValue(int value, int minValue, int maxValue) {
+  if (value < minValue) return minValue;
+  if (value > maxValue) return maxValue;
+  return value;
 }
 
-bool readTGAMPacket() {
-  static byte payload[64];
+void simulateEEG() {
+  unsigned long now = millis();
+  if (now - lastSampleAt < sampleIntervalMs) return;
+  lastSampleAt = now;
 
-  if (!brain.available()) return false;
-  if (brain.read() != 0xAA) return false;
+  float seconds = now / 1000.0f;
+  float focusWave = sinf(seconds * 0.21f);
+  float calmWave = sinf(seconds * 0.13f + 1.4f);
+  float rawWaveFast = sinf(seconds * 4.6f);
+  float rawWaveSlow = sinf(seconds * 1.2f + 0.7f);
 
-  while (!brain.available()) {}
-  if (brain.read() != 0xAA) return false;
-
-  while (!brain.available()) {}
-  int payloadLength = brain.read();
-  if (payloadLength <= 0 || payloadLength > 64) return false;
-
-  byte checksum = 0;
-  for (int i = 0; i < payloadLength; i++) {
-    while (!brain.available()) {}
-    payload[i] = brain.read();
-    checksum += payload[i];
+  if (dropoutUntil == 0 && random(0, 1000) < 8) {
+    dropoutUntil = now + random(5000, 12000);
   }
 
-  while (!brain.available()) {}
-  byte receivedChecksum = brain.read();
-  checksum = 255 - checksum;
-  if (checksum != receivedChecksum) return false;
+  bool inDropout = now < dropoutUntil;
+  if (!inDropout && dropoutUntil != 0) {
+    dropoutUntil = 0;
+  }
 
-  parsePayload(payload, payloadLength);
-  tgAmSeen = true;
-  lastTgamAt = millis();
-  return true;
+  int attentionTarget = inDropout
+    ? 34 + (int)(focusWave * 7.0f) + random(-6, 7)
+    : 74 + (int)(focusWave * 10.0f) + random(-5, 6);
+
+  int meditationTarget = inDropout
+    ? 48 + (int)(calmWave * 9.0f) + random(-5, 6)
+    : 63 + (int)(calmWave * 11.0f) + random(-4, 5);
+
+  attention = clampValue((attention * 4 + attentionTarget) / 5, 20, 96);
+  meditation = clampValue((meditation * 4 + meditationTarget) / 5, 25, 94);
+  poorSignal = clampValue(inDropout ? random(35, 85) : random(5, 30), 0, 200);
+
+  int rawTarget = (int)(rawWaveFast * 1400.0f) + (int)(rawWaveSlow * 600.0f) + random(-220, 221);
+  rawValue = clampValue(rawTarget, -3200, 3200);
+
+  simulatorReady = true;
 }
 
 void sendEEGToBackend() {
@@ -220,6 +199,7 @@ void sendEEGToBackend() {
   http.addHeader("Authorization", String("Bearer ") + deviceApiKey);
 
   String body = "{";
+  body += "\"studentId\":\"" + String(studentId) + "\",";
   body += "\"attention\":" + String(attention) + ",";
   body += "\"meditation\":" + String(meditation) + ",";
   body += "\"signal\":" + String(poorSignal) + ",";
@@ -245,12 +225,10 @@ void sendEEGToBackend() {
 void setup() {
   Serial.begin(115200);
   delay(1200);
+  randomSeed((uint32_t)esp_random());
 
   Serial.println();
-  Serial.println("[IUI] ESP32 TGAM sender starting...");
-
-  brain.begin(57600, SERIAL_8N1, TGAM_RX, TGAM_TX);
-  Serial.println("[IUI] TGAM serial started on UART2");
+  Serial.println("[IUI] ESP32 EEG simulator starting...");
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -277,12 +255,13 @@ void setup() {
 
   Serial.println("[IUI] Local monitor started");
   Serial.printf("[IUI] Device ID: %s\n", deviceId);
+  Serial.printf("[IUI] Student ID: %s\n", studentId);
   Serial.printf("[IUI] Backend URL: %s\n", backendUrl);
 }
 
 void loop() {
   ensureWifi();
-  readTGAMPacket();
+  simulateEEG();
   sendEEGToBackend();
   server.handleClient();
 }

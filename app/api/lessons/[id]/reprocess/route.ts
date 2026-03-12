@@ -5,6 +5,7 @@ import { isTeacherRole } from "@/lib/auth/rbac";
 import { requireSession } from "@/lib/auth/require-session";
 import { db } from "@/lib/db";
 import { ensureDatabaseReady } from "@/lib/db-init";
+import { buildLessonEegSummary } from "@/lib/lesson-eeg-summary";
 import { processLessonAi } from "@/lib/lesson-ai";
 import { TranscriptLine } from "@/lib/types";
 
@@ -26,7 +27,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         id: true,
         teacherId: true,
         notes: true,
-        transcript: true
+        transcript: true,
+        startedAt: true,
+        endedAt: true,
+        participants: {
+          where: { role: "student" },
+          select: { userId: true }
+        }
       }
     });
     if (!lesson || lesson.teacherId !== user.id) {
@@ -40,6 +47,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       transcript = [];
     }
 
+    const eegSummary = await buildLessonEegSummary({
+      studentIds: lesson.participants.map((item) => item.userId),
+      startedAt: lesson.startedAt,
+      endedAt: lesson.endedAt
+    });
+
     await db.lesson.update({
       where: { id: lesson.id },
       data: {
@@ -50,7 +63,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     const ai = await processLessonAi({
       transcript,
-      notes: lesson.notes ?? ""
+      notes: lesson.notes ?? "",
+      dropMoments: eegSummary.dropMoments,
+      engagementValues: eegSummary.engagementValues,
+      eegSummary
     });
 
     await db.lesson.update({
@@ -61,7 +77,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
           text: ai.summary,
           keyTopics: ai.keyTopics,
           recommendations: ai.recommendations,
-          difficultMoments: ai.difficultMoments
+          difficultMoments: ai.difficultMoments,
+          eeg: eegSummary
         }),
         aiError: null
       }
@@ -79,4 +96,3 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to reprocess lesson" }, { status: 500 });
   }
 }
-

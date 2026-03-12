@@ -10,7 +10,16 @@ function parseSummary(summary: string | null) {
       text: "",
       keyTopics: [] as string[],
       recommendations: [] as string[],
-      difficultMoments: [] as string[]
+      difficultMoments: [] as string[],
+      eeg: null as null | {
+        avgAttention: number;
+        avgMeditation: number;
+        avgSignal: number;
+        avgEngagement: number;
+        sampleCount: number;
+        dropMoments: string[];
+        engagementValues: number[];
+      }
     };
   }
 
@@ -20,19 +29,40 @@ function parseSummary(summary: string | null) {
       keyTopics?: string[];
       recommendations?: string[];
       difficultMoments?: string[];
+      eeg?: {
+        avgAttention?: number;
+        avgMeditation?: number;
+        avgSignal?: number;
+        avgEngagement?: number;
+        sampleCount?: number;
+        dropMoments?: string[];
+        engagementValues?: number[];
+      };
     };
     return {
       text: parsed.text ?? "",
       keyTopics: parsed.keyTopics ?? [],
       recommendations: parsed.recommendations ?? [],
-      difficultMoments: parsed.difficultMoments ?? []
+      difficultMoments: parsed.difficultMoments ?? [],
+      eeg: parsed.eeg
+        ? {
+            avgAttention: parsed.eeg.avgAttention ?? 0,
+            avgMeditation: parsed.eeg.avgMeditation ?? 0,
+            avgSignal: parsed.eeg.avgSignal ?? 0,
+            avgEngagement: parsed.eeg.avgEngagement ?? 0,
+            sampleCount: parsed.eeg.sampleCount ?? 0,
+            dropMoments: parsed.eeg.dropMoments ?? [],
+            engagementValues: parsed.eeg.engagementValues ?? []
+          }
+        : null
     };
   } catch {
     return {
       text: summary,
       keyTopics: [] as string[],
       recommendations: [] as string[],
-      difficultMoments: [] as string[]
+      difficultMoments: [] as string[],
+      eeg: null
     };
   }
 }

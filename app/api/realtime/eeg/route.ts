@@ -1,7 +1,7 @@
 import { requireSession } from "@/lib/auth/require-session";
 import { db } from "@/lib/db";
 import { canAccessStudent, getStudentScopeForUser } from "@/lib/eeg/access";
-import { eegRealtimeHub } from "@/lib/eeg/realtime-hub";
+import { createMockEEGReading } from "@/lib/eeg/mock-stream";
 
 export const dynamic = "force-dynamic";
 
@@ -29,37 +29,18 @@ export async function GET(request: Request) {
   const scope = await getStudentScopeForUser(session.user);
   const effectiveScope = requestedStudentId ? new Set([requestedStudentId]) : scope;
 
-  const initialWhere = requestedStudentId
-    ? { studentId: requestedStudentId }
+  const studentIds = requestedStudentId
+    ? [requestedStudentId]
     : effectiveScope
-    ? { studentId: { in: Array.from(effectiveScope) } }
-    : {};
+    ? Array.from(effectiveScope)
+    : (
+        await db.user.findMany({
+          where: { role: "student" },
+          select: { id: true }
+        })
+      ).map((row) => row.id);
 
-  const initialRows = await db.eEGReading.findMany({
-    where: initialWhere,
-    orderBy: { timestamp: "desc" },
-    take: 40,
-    select: {
-      id: true,
-      studentId: true,
-      attention: true,
-      meditation: true,
-      signal: true,
-      raw: true,
-      engagementScore: true,
-      state: true,
-      timestamp: true,
-      lessonSessionId: true,
-      deviceId: true
-    }
-  });
-
-  const latestPerStudent = new Map<string, (typeof initialRows)[number]>();
-  for (const row of initialRows) {
-    if (!latestPerStudent.has(row.studentId)) {
-      latestPerStudent.set(row.studentId, row);
-    }
-  }
+  const initialRows = studentIds.map((studentId) => createMockEEGReading({ studentId }));
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -68,7 +49,7 @@ export async function GET(request: Request) {
         encoder.encode(
           sseChunk({
             event: "snapshot",
-            data: Array.from(latestPerStudent.values()).map((row) => ({
+            data: initialRows.map((row) => ({
               readingId: row.id,
               studentId: row.studentId,
               attention: row.attention,
@@ -85,24 +66,39 @@ export async function GET(request: Request) {
         )
       );
 
-      const unsubscribe = eegRealtimeHub.subscribe(effectiveScope, (event) => {
-        controller.enqueue(
-          encoder.encode(
-            sseChunk({
-              event: "eeg",
-              data: event
-            })
-          )
-        );
-      });
+      const eegTick = setInterval(() => {
+        for (const studentId of studentIds) {
+          const event = createMockEEGReading({ studentId });
+          controller.enqueue(
+            encoder.encode(
+              sseChunk({
+                event: "eeg",
+                data: {
+                  readingId: event.id,
+                  studentId: event.studentId,
+                  attention: event.attention,
+                  meditation: event.meditation,
+                  signal: event.signal,
+                  raw: event.raw,
+                  engagementScore: event.engagementScore,
+                  state: event.state,
+                  timestamp: event.timestamp.toISOString(),
+                  lessonSessionId: event.lessonSessionId,
+                  deviceId: event.deviceId
+                }
+              })
+            )
+          );
+        }
+      }, 1800);
 
       const ping = setInterval(() => {
         controller.enqueue(encoder.encode(sseChunk({ event: "ping", data: { ts: Date.now() } })));
       }, 15000);
 
       request.signal.addEventListener("abort", () => {
+        clearInterval(eegTick);
         clearInterval(ping);
-        unsubscribe();
         controller.close();
       });
     }
@@ -116,4 +112,3 @@ export async function GET(request: Request) {
     }
   });
 }
-

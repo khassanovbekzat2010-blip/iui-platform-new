@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { requireSession } from "@/lib/auth/require-session";
-import { db } from "@/lib/db";
 import { canAccessStudent } from "@/lib/eeg/access";
+import { createMockEEGHistory } from "@/lib/eeg/mock-stream";
 import { eegHistoryQuerySchema } from "@/lib/eeg/schemas";
 
 export async function GET(request: Request) {
@@ -19,23 +19,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const history = await db.eEGReading.findMany({
-      where: { studentId: parsed.studentId },
-      orderBy: { timestamp: "desc" },
-      take: parsed.limit,
-      select: {
-        id: true,
-        studentId: true,
-        attention: true,
-        meditation: true,
-        signal: true,
-        raw: true,
-        engagementScore: true,
-        state: true,
-        timestamp: true,
-        lessonSessionId: true
-      }
-    });
+    const history = createMockEEGHistory(parsed.studentId, parsed.limit);
 
     return NextResponse.json({
       studentId: parsed.studentId,
@@ -52,4 +36,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

@@ -7,6 +7,7 @@ import { requireSession } from "@/lib/auth/require-session";
 import { db } from "@/lib/db";
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { ensureUserRows } from "@/lib/edu-service";
+import { buildLessonEegSummary } from "@/lib/lesson-eeg-summary";
 import { processLessonAi } from "@/lib/lesson-ai";
 import { buildStorageObject } from "@/lib/storage";
 import { TranscriptLine } from "@/lib/types";
@@ -136,6 +137,7 @@ export async function POST(request: Request) {
     );
 
     const now = new Date();
+    const startedAt = new Date(now.getTime() - parsed.durationSec * 1000);
     const lesson = await db.lesson.create({
       data: {
         teacherId: user.id,
@@ -144,7 +146,7 @@ export async function POST(request: Request) {
         classroomName: parsed.classroomName,
         notes: parsed.notes,
         transcript: JSON.stringify(transcript),
-        startedAt: new Date(now.getTime() - parsed.durationSec * 1000),
+        startedAt,
         endedAt: now,
         durationSec: parsed.durationSec,
         aiStatus: LessonProcessingStatus.PROCESSING,
@@ -174,11 +176,19 @@ export async function POST(request: Request) {
     let keyTopics: string[] = [];
     let recommendations: string[] = [];
     let generatedHomework: string[] = [];
+    const eegSummary = await buildLessonEegSummary({
+      studentIds: participantIds,
+      startedAt,
+      endedAt: now
+    });
 
     try {
       const ai = await processLessonAi({
         transcript,
-        notes: parsed.notes ?? ""
+        notes: parsed.notes ?? "",
+        dropMoments: eegSummary.dropMoments,
+        engagementValues: eegSummary.engagementValues,
+        eegSummary
       });
 
       summary = ai.summary;
@@ -204,7 +214,8 @@ export async function POST(request: Request) {
             text: ai.summary,
             keyTopics: ai.keyTopics,
             recommendations: ai.recommendations,
-            difficultMoments: ai.difficultMoments
+            difficultMoments: ai.difficultMoments,
+            eeg: eegSummary
           }),
           aiError: null,
           s3Bucket: recordingStorage.bucket ?? undefined,

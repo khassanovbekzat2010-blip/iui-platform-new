@@ -1,11 +1,20 @@
 import { generateLessonAi } from "@/lib/mock-ai";
 import { TranscriptLine } from "@/lib/types";
 
+type LessonEegSummary = {
+  avgAttention: number;
+  avgMeditation: number;
+  avgSignal: number;
+  avgEngagement: number;
+  sampleCount: number;
+};
+
 type LessonAiInput = {
   transcript: TranscriptLine[];
   notes: string;
   dropMoments?: string[];
   engagementValues?: number[];
+  eegSummary?: LessonEegSummary;
 };
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
@@ -63,6 +72,11 @@ ${(input.dropMoments ?? []).join(", ") || "none"}
 
 Engagement values:
 ${(input.engagementValues ?? []).join(", ") || "none"}
+
+Real EEG summary:
+${input.eegSummary
+  ? `avgAttention=${input.eegSummary.avgAttention}, avgMeditation=${input.eegSummary.avgMeditation}, avgSignal=${input.eegSummary.avgSignal}, avgEngagement=${input.eegSummary.avgEngagement}, samples=${input.eegSummary.sampleCount}`
+  : "none"}
 `;
 
   try {
@@ -128,7 +142,8 @@ export async function processLessonAi(input: LessonAiInput) {
         transcript: input.transcript,
         notes: input.notes,
         dropMoments: input.dropMoments ?? [],
-        engagementValues: input.engagementValues ?? []
+        engagementValues: input.engagementValues ?? [],
+        eegSummary: input.eegSummary
       });
     }),
     8000

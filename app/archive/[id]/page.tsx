@@ -29,6 +29,14 @@ type LessonDetailDTO = {
       keyTopics: string[];
       recommendations: string[];
       difficultMoments: string[];
+      eeg: null | {
+        avgAttention: number;
+        avgMeditation: number;
+        avgSignal: number;
+        avgEngagement: number;
+        sampleCount: number;
+        dropMoments: string[];
+      };
     };
     transcript: Array<{
       speaker: string;
@@ -145,6 +153,21 @@ export default function ArchiveLessonDetailPage() {
                 {lesson.summary.difficultMoments.map((item) => (
                   <p key={item} className="text-sm text-muted-foreground">- {item}</p>
                 ))}
+              </div>
+            ) : null}
+            {lesson.summary.eeg ? (
+              <div className="space-y-2 rounded-xl border border-border/60 bg-muted/20 p-3">
+                <p className="text-sm font-medium">EEG / TGAM during lesson</p>
+                <p className="text-sm text-muted-foreground">
+                  Attention {lesson.summary.eeg.avgAttention}% | Meditation {lesson.summary.eeg.avgMeditation}% | Signal {lesson.summary.eeg.avgSignal}% | Engagement {lesson.summary.eeg.avgEngagement}% | Samples {lesson.summary.eeg.sampleCount}
+                </p>
+                {lesson.summary.eeg.dropMoments.length ? (
+                  <div className="space-y-1">
+                    {lesson.summary.eeg.dropMoments.map((item) => (
+                      <p key={item} className="text-xs text-muted-foreground">- {item}</p>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </CardContent>
